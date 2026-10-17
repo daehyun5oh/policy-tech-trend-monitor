@@ -1,0 +1,17 @@
+document_id,keyword_id,keyword,matched_terms,occurrences,dictionary_version
+D01,K001,인공지능,"[""AI""]",1,ctx-fixture-1
+D01,K002,반도체,"[""반도체""]",1,ctx-fixture-1
+D02,K001,인공지능,"[""AI"",""인공지능""]",2,ctx-fixture-1
+D03,K001,인공지능,"[""AI""]",1,ctx-fixture-1
+D03,K003,클라우드,"[""클라우드"",""cloud""]",2,ctx-fixture-1
+D04,K001,인공지능,"[""인공지능""]",1,ctx-fixture-1
+D04,K002,반도체,"[""반도체""]",1,ctx-fixture-1
+D05,K002,반도체,"[""반도체""]",1,ctx-fixture-1
+D06,K001,인공지능,"[""AI""]",1,ctx-fixture-1
+D06,K004,로봇,"[""로봇""]",1,ctx-fixture-1
+D08,K003,클라우드,"[""cloud""]",1,ctx-fixture-1
+D09,K001,인공지능,"[""인공지능""]",1,ctx-fixture-1
+D09,K003,클라우드,"[""클라우드""]",1,ctx-fixture-1
+D10,K001,인공지능,"[""AI""]",1,ctx-fixture-1
+D10,K004,로봇,"[""로봇""]",1,ctx-fixture-1
+D12,K001,인공지능,"[""인공지능""]",1,ctx-fixture-1
