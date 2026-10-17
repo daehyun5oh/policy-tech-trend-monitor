@@ -226,5 +226,79 @@ class DailyAndRedistributionTest(unittest.TestCase):
             self.assertEqual(app.load_hidden_sources(Path(tmp) / "none.csv"), frozenset())
 
 
+CTX = ROOT / "tests" / "fixtures" / "context"
+
+
+class ContextPanelModelTest(unittest.TestCase):
+    """대시보드가 계산한 맥락 값이 손으로 계산한 정답(tests/fixtures/context/expected)과 같은지 확인한다."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.m = app.build_model(app.read_csv(CTX / "documents.csv"), app.read_csv(CTX / "document_keywords.csv"), [],
+                                generated_at="2026-10-26T00:00:00+09:00")
+        cls.weekly = {p["start"]: p["end"] for p in cls.m["periods"]["weekly"]}
+
+    def each_view(self):
+        for start, end in self.weekly.items():
+            for t in ("news", "policy", "all"):
+                yield start, end, t, self.m["views"]["weekly|%s|%s" % (start, t)]["ctx"]
+
+    def expected(self, name, keys, values):
+        out = {}
+        for r in app.read_csv(CTX / "expected" / name):
+            out[tuple(r[k] for k in keys)] = tuple(r[v] for v in values)
+        return out
+
+    def test_weekly_periods_skip_the_week_without_documents(self):
+        self.assertEqual(list(self.weekly), ["2026-09-21", "2026-09-28", "2026-10-05", "2026-10-19"])
+
+    def test_co_keywords(self):
+        got = {}
+        for start, end, t, ctx in self.each_view():
+            for kid, c in ctx.items():
+                for rid, rname, n, share, rank in c["co"]:
+                    got[("weekly", start, end, t, kid, rid)] = (rname, str(n), share, str(rank))
+        want = self.expected("keyword_context.csv", ("period_type", "period_start", "period_end", "source_type", "keyword_id", "related_keyword_id"),
+                             ("related_keyword", "co_document_count", "co_share", "rank"))
+        self.assertEqual(got, want)
+
+    def test_sources(self):
+        got = {}
+        for start, end, t, ctx in self.each_view():
+            for kid, c in ctx.items():
+                for src, n, total, share in c["src"]:
+                    got[("weekly", start, end, t, kid, src)] = (str(n), str(total), share)
+        want = self.expected("keyword_sources.csv", ("period_type", "period_start", "period_end", "source_type", "keyword_id", "source_name"),
+                             ("document_count", "source_total_documents", "source_share"))
+        self.assertEqual(got, want)
+
+    def test_terms(self):
+        got = {}
+        for start, end, t, ctx in self.each_view():
+            for kid, c in ctx.items():
+                for term, n in c["terms"]:
+                    got[("weekly", start, end, t, kid, term)] = (str(n),)
+        want = self.expected("keyword_terms.csv", ("period_type", "period_start", "period_end", "source_type", "keyword_id", "term"),
+                             ("document_count",))
+        self.assertEqual(got, want)
+
+    def test_spread_and_streak(self):
+        got = {}
+        for start, end, t, ctx in self.each_view():
+            for kid, c in ctx.items():
+                got[("weekly", start, end, t, kid)] = (str(c["sc"]), str(c["tc"]), str(c["st"]))
+        want = self.expected("keyword_stats_extra.csv", ("period_type", "period_start", "period_end", "source_type", "keyword_id"),
+                             ("source_count", "type_count", "streak"))
+        self.assertEqual(got, want)
+
+    def test_meta_is_loaded_and_embedded(self):
+        meta = app.load_meta(ROOT / "config" / "keyword_meta.csv")
+        self.assertEqual(len(meta), 47)
+        self.assertEqual(meta["K001"]["c"], "AI·모델")
+        m = app.build_model(app.read_csv(CTX / "documents.csv"), app.read_csv(CTX / "document_keywords.csv"), [], meta=meta)
+        self.assertEqual(m["meta"]["K001"]["d"], meta["K001"]["d"])
+        self.assertEqual(app.load_meta(ROOT / "none.csv"), {})
+
+
 if __name__ == "__main__":
     unittest.main()

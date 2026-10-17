@@ -33,6 +33,8 @@ from schema import SOURCE_TYPES, STATUS_ANALYZED, STATUS_EXCLUDED, STATUS_FAILED
 
 TEMPLATE = HERE / "template.html"
 SOURCES_FILE = HERE.parent / "config" / "sources.csv"
+META_FILE = HERE.parent / "config" / "keyword_meta.csv"
+CO_LIMIT = 12  # 키워드마다 화면에 실을 함께 나온 키워드 수
 # redistribution 값이 이 집합에 있는 출처는 제목·본문을 공개 산출물에 싣지 않는다 (docs/source_policy.md, 이슈 #2).
 HIDE_TITLE = {"local_only_no_publish"}
 KST = dt.timezone(dt.timedelta(hours=9))
@@ -73,6 +75,74 @@ def load_hidden_sources(path):
     return frozenset(cell(r, "source_name") for r in rows if cell(r, "redistribution") in HIDE_TITLE)
 
 
+def load_meta(path):
+    """keyword_meta.csv 에서 {keyword_id: {"c": 분야, "d": 설명}} 을 읽는다. 파일이 없으면 빈 dict."""
+    try:
+        rows = read_csv(path)
+    except OSError:
+        return {}
+    return {cell(r, "keyword_id"): {"c": cell(r, "category"), "d": cell(r, "description")}
+            for r in rows if cell(r, "keyword_id")}
+
+
+def pct(num, den):
+    return "%.2f" % (num / den * 100)
+
+
+def compute_context(members, kids_by_doc, names, terms_by_doc):
+    """한 기간·유형의 분석 문서(members: documents.csv 행 목록)에서 키워드별 맥락 값을 계산한다.
+
+    정의는 docs/context_indicators.md §3 과 같다. 집계(aggregate.py)가 같은 값을 만들면 그 값으로 바꾼다.
+    반환: {keyword_id: {"co": [[연관 id, 연관 이름, 함께 나온 문서 수, 비율, 순위]], "src": [[출처, 문서 수, 출처 분석 문서 수, 비율]],
+                      "terms": [[표기, 문서 수]], "sc": 출처 수, "tc": 유형 수}}
+    """
+    by_kid = defaultdict(set)
+    for r in members:
+        did = cell(r, "document_id")
+        for kid in kids_by_doc.get(did, ()):
+            by_kid[kid].add(did)
+    row_of = {cell(r, "document_id"): r for r in members}
+    totals = defaultdict(int)
+    for r in members:
+        totals[cell(r, "source_name")] += 1
+    out = {}
+    for kid, docs in by_kid.items():
+        co = {rid: len(docs & rdocs) for rid, rdocs in by_kid.items() if rid != kid and docs & rdocs}
+        co_rows = []
+        for rid, n in sorted(co.items(), key=lambda kv: (-kv[1], names.get(kv[0], kv[0]))):
+            co_rows.append([rid, names.get(rid, rid), n, pct(n, len(docs)), 1 + sum(1 for m in co.values() if m > n)])
+        per_src = defaultdict(int)
+        per_term = defaultdict(set)
+        for did in docs:
+            per_src[cell(row_of[did], "source_name")] += 1
+            for term in terms_by_doc.get((did, kid), ()):
+                per_term[term].add(did)
+        out[kid] = {
+            "co": co_rows[:CO_LIMIT],
+            "src": [[s, n, totals[s], pct(n, totals[s])] for s, n in sorted(per_src.items(), key=lambda kv: (-kv[1], kv[0]))],
+            "terms": [[t, len(d)] for t, d in sorted(per_term.items(), key=lambda kv: (-len(kv[1]), kv[0]))],
+            "sc": len(per_src),
+            "tc": len({cell(row_of[d], "source_type") for d in docs}),
+        }
+    return out
+
+
+def apply_streaks(views, periods):
+    """연속 기간 수(streak)를 채운다. 분석 문서가 없는 기간은 건너뛰고(끊지 않음),
+    문서는 있었는데 그 키워드가 없으면 끊는다 (docs/context_indicators.md §3-4)."""
+    for pt, plist in periods.items():
+        for tid, _ in TYPES:
+            run = {}
+            for p in sorted(plist, key=lambda x: x["start"]):
+                v = views.get("%s|%s|%s" % (pt, p["start"], tid))
+                if not v or v["analyzed"] == 0:
+                    continue
+                nxt = {kid: run.get(kid, 0) + 1 for kid in v["ctx"]}
+                for kid, c in v["ctx"].items():
+                    c["st"] = nxt[kid]
+                run = nxt
+
+
 def date_range(first, last):
     """first~last(포함) 사이의 모든 날짜를 YYYY-MM-DD 문자열로."""
     out, d = [], dt.date.fromisoformat(first)
@@ -83,7 +153,7 @@ def date_range(first, last):
     return out
 
 
-def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, generated_at=None, hidden_sources=frozenset()):
+def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, generated_at=None, hidden_sources=frozenset(), meta=None):
     """CSV 행 목록으로 화면에 필요한 모든 값을 미리 계산한 dict를 만든다."""
     analyzed, excluded = [], []
     failed = {t: 0 for t in SOURCE_TYPES}
@@ -139,8 +209,15 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
     for r in stats_rows:
         by_group[(cell(r, "period_type"), cell(r, "period_start"), cell(r, "source_type"))].append(r)
     kids_by_doc = defaultdict(set)
+    names, terms_by_doc = {}, {}
     for r in keyword_rows:
         kids_by_doc[cell(r, "document_id")].add(cell(r, "keyword_id"))
+        names[cell(r, "keyword_id")] = cell(r, "keyword")
+        try:
+            terms = json.loads(cell(r, "matched_terms") or "[]")
+        except ValueError:
+            terms = []
+        terms_by_doc[(cell(r, "document_id"), cell(r, "keyword_id"))] = [t for t in terms if isinstance(t, str)]
 
     doc_list, doc_index = [], {}
 
@@ -179,7 +256,9 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
                     "csvTotal": (vc.to_int(cell(rows[0], "total_documents")) if rows else None),
                     "stats": stats,
                     "ev": dict(evidence),
+                    "ctx": compute_context([m[1] for m in members], kids_by_doc, names, terms_by_doc),
                 }
+    apply_streaks(views, periods)
     coverage = {}
     for tid in SOURCE_TYPES:
         days = [d.isoformat() for d, r in analyzed if cell(r, "source_type") == tid]
@@ -200,6 +279,7 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
         "overall": {"failed": failed, "excludedUndated": undated},
         "coverage": coverage,
         "commonRange": common,
+        "meta": meta or {},
     }
 
 
@@ -227,6 +307,7 @@ def main(argv=None):
     p.add_argument("--out", help="출력 HTML (기본 <dir>/dashboard.html)")
     p.add_argument("--title", default=DEFAULT_TITLE)
     p.add_argument("--sources", default=str(SOURCES_FILE), help="출처 목록(redistribution 으로 제목 공개 여부 결정). 기본 config/sources.csv")
+    p.add_argument("--meta", default=str(META_FILE), help="키워드 설명·분야 (기본 config/keyword_meta.csv). 없으면 설명 없이 표시")
     p.add_argument("--no-validate", action="store_true", help="입력 CSV 규격 검사를 건너뜀")
     p.add_argument("--open", action="store_true", help="만든 뒤 기본 브라우저로 연다")
     args = p.parse_args(argv)
@@ -244,7 +325,7 @@ def main(argv=None):
                 print("입력 CSV에 오류가 %d건 있어 대시보드를 만들지 않았습니다. (--no-validate로 건너뛸 수 있음)" % len(report.errors), file=sys.stderr)
                 return 1
         model = build_model(read_csv(documents), read_csv(keywords), read_csv(stats), title=args.title,
-                            hidden_sources=load_hidden_sources(args.sources))
+                            hidden_sources=load_hidden_sources(args.sources), meta=load_meta(args.meta))
     except OSError as e:
         print("오류: %s" % e, file=sys.stderr)
         return 2

@@ -68,6 +68,17 @@ main h2 { margin: 0 0 6px; font-size: 1.15rem; letter-spacing: -0.01em; }
 .docs a { color: var(--ink); text-decoration-color: var(--bar, var(--all)); text-underline-offset: 3px; }
 .docs .m { margin-left: 12px; font-size: 0.82rem; color: var(--muted); }
 .fine { margin: 10px 0 0; font-size: 0.84rem; color: var(--muted); max-width: 70ch; }
+.kwhead { margin: 0 0 4px; font-size: 0.93rem; max-width: 70ch; }
+.kwhead .cat { display: inline-block; margin-right: 8px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 10px; font-size: 0.78rem; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; padding: 0; list-style: none; }
+.chips li { padding: 1px 9px; border: 1px solid var(--rule); border-radius: 10px; font-size: 0.82rem; background: var(--paper); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.tabs button { padding: 4px 12px; background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; cursor: pointer; font-size: 0.88rem; }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); font-weight: 600; }
+.pairs { margin: 0; padding: 0; list-style: none; }
+.pairs li { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; }
+.pairs .n { font-size: 0.82rem; color: var(--muted); }
+.pairs .bar2 { flex: none; height: 10px; min-width: 3px; background: var(--bar, var(--all)); }
 .scroll { overflow-x: auto; margin-top: 10px; }
 .trendunit { margin: 18px 0 0; font-size: 0.98rem; }
 .trendunit small { font-weight: 400; color: var(--muted); }
@@ -289,12 +300,12 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     }
   }
 
-  function fillEvidence(panel, v, kid) {
-    clear(panel);
+  var UNIT_WORD = { daily: '일', weekly: '주', monthly: '개월' };
+
+  function docList(v, kid) {
     var idxs = (v.ev && v.ev[kid]) || [];
     if (!idxs.length) {
-      panel.appendChild(el('p', 'fine', '근거 문서를 찾지 못했습니다. documents.csv와 document_keywords.csv가 같은 실행 결과인지 확인하세요.'));
-      return;
+      return el('p', 'fine', '근거 문서를 찾지 못했습니다. documents.csv와 document_keywords.csv가 같은 실행 결과인지 확인하세요.');
     }
     var ul = el('ul', 'docs');
     idxs.forEach(function (i) {
@@ -311,7 +322,79 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       li.appendChild(el('span', 'm', TYPE_LABEL[d.y] || d.y));
       ul.appendChild(li);
     });
-    panel.appendChild(ul);
+    return ul;
+  }
+
+  // 막대 하나가 붙은 목록: rows = [[라벨, 값, 보조 설명]]
+  function pairList(rows, max) {
+    var ul = el('ul', 'pairs');
+    rows.forEach(function (r) {
+      var li = el('li');
+      li.appendChild(el('span', null, r[0]));
+      var bar = el('span', 'bar2');
+      bar.style.width = (r[1] / max * 120) + 'px';
+      li.appendChild(bar);
+      li.appendChild(el('span', 'n', r[2]));
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+
+  function contextBody(tab, v, kid) {
+    var c = v.ctx && v.ctx[kid], box = el('div');
+    if (tab === 'docs') { box.appendChild(docList(v, kid)); return box; }
+    if (!c) { box.appendChild(el('p', 'fine', '이 기간의 맥락 값을 계산하지 못했습니다.')); return box; }
+    if (tab === 'co') {
+      if (!c.co.length) {
+        box.appendChild(el('p', 'fine', '이 기간에는 이 키워드와 같은 문서에 나온 다른 키워드가 없습니다.'));
+      } else {
+        box.appendChild(pairList(c.co.map(function (r) { return [r[1], r[2], r[2] + '건 (이 키워드 문서의 ' + r[3] + '%)']; }), c.co[0][2]));
+      }
+      box.appendChild(el('p', 'fine', '같은 문서에 함께 나온 횟수이며, 인과나 연관 강도를 뜻하지 않습니다.'));
+    } else if (tab === 'src') {
+      box.appendChild(pairList(c.src.map(function (r) { return [r[0], r[1], r[1] + '건 (그 출처 분석 문서 ' + r[2] + '건 중 ' + r[3] + '%)']; }), c.src[0][1]));
+      box.appendChild(el('p', 'fine', '한 출처에 몰려 있는지 보려는 값입니다. 분모는 그 출처의 분석 문서 수입니다.'));
+    } else {
+      box.appendChild(pairList(c.terms.map(function (r) { return [r[0], r[1], r[1] + '건']; }), c.terms[0] ? c.terms[0][1] : 1));
+      box.appendChild(el('p', 'fine', '문서에 실제로 쓰인 표기입니다. 한 문서에 여러 표기가 나오면 각각 센 것이라 합이 문서 수보다 클 수 있습니다.'));
+    }
+    return box;
+  }
+
+  function fillEvidence(panel, v, kid) {
+    clear(panel);
+    var meta = (M.meta || {})[kid], c = v.ctx && v.ctx[kid];
+    if (meta && (meta.c || meta.d)) {
+      var h = el('p', 'kwhead');
+      if (meta.c) h.appendChild(el('span', 'cat', meta.c));
+      h.appendChild(document.createTextNode(meta.d || ''));
+      panel.appendChild(h);
+    }
+    if (c) {
+      var chips = el('ul', 'chips');
+      chips.appendChild(el('li', null, '출처 ' + c.sc + '곳'));
+      if (state.type === 'all') chips.appendChild(el('li', null, '자료 유형 ' + c.tc + '개'));
+      chips.appendChild(el('li', null, '연속 ' + c.st + UNIT_WORD[state.pt]));
+      chips.title = '출처 수와 연속 기간은 몇 곳에서 얼마나 이어서 언급됐는지를 뜻하며, 영향력이나 중요도, 성숙도를 뜻하지 않습니다.';
+      panel.appendChild(chips);
+    }
+    var tabs = el('div', 'tabs'), body = el('div');
+    var defs = [['docs', '근거 문서'], ['co', '함께 나온 키워드'], ['src', '출처'], ['terms', '표기']];
+    function show(id) {
+      Array.prototype.forEach.call(tabs.children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.tab === id)); });
+      clear(body);
+      body.appendChild(contextBody(id, v, kid));
+    }
+    defs.forEach(function (d) {
+      var b = el('button', null, d[1]);
+      b.type = 'button'; b.dataset.tab = d[0];
+      b.addEventListener('click', function (e) { e.stopPropagation(); show(d[0]); });
+      tabs.appendChild(b);
+    });
+    panel.appendChild(tabs);
+    panel.appendChild(body);
+    show('docs');
+    panel.appendChild(el('p', 'fine', '출처 수·연속 기간·함께 나온 키워드·표기는 대시보드가 documents.csv와 document_keywords.csv에서 계산한 값입니다(정의: docs/context_indicators.md).'));
   }
 
   function renderRanks() {
