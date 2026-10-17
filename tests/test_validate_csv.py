@@ -186,5 +186,50 @@ class PartialPeriodColumnTest(unittest.TestCase):
         self.assertTrue(any("is_partial_period" in m for m in self.run_with("true")))
 
 
+class PeriodChecksTest(unittest.TestCase):
+    def write_sources(self, tmp, rows):
+        path = Path(tmp) / "sources.csv"
+        lines = ["source_id,source_type,access_check_status,collect_from,collect_to"] + rows
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return path
+
+    def test_same_window_has_no_warning(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_sources(tmp, ["n1,news,terms_ok,2026-10-01,2026-10-31",
+                                            "p1,policy,terms_ok,2026-10-01,2026-10-31"])
+            self.assertEqual(vc.period_warnings(sources=path), [])
+
+    def test_different_windows_are_warned(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_sources(tmp, ["n1,news,terms_ok,2026-10-01,2026-10-31",
+                                            "p1,policy,terms_ok,2026-05-01,2026-10-31",
+                                            "p2,policy,unverified,2026-01-01,2026-02-01"])
+            warnings = vc.period_warnings(sources=path)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn("수집 기간이 출처마다 다름", warnings[0])
+
+    def test_document_ranges_report_the_common_range(self):
+        warnings = vc.period_warnings(documents=SOURCES["documents"])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("공통 범위 2026-09-28~2026-10-01", warnings[0])
+
+    def test_non_overlapping_ranges_are_warned(self):
+        fields, rows = read(SOURCES["documents"])
+        for r in rows:
+            if r["source_type"] == "policy":
+                r["published_date"] = "2026-12-01" if r["published_date"] else ""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "documents.csv"
+            write(path, fields, rows)
+            self.assertIn("겹치지 않음", vc.period_warnings(documents=path)[0])
+
+
+class DailyStatsRuleTest(ValidatorTestCase):
+    def test_daily_period_must_be_a_single_day(self):
+        def bad(rows):
+            row_of(rows, period_type="daily", period_start="2026-09-24", source_type="news", keyword_id="K001")["period_end"] = "2026-09-25"
+        self.assertReported(self.check(stats=bad), "일간은 시작일과 종료일이 같아야 함")
+
+
 if __name__ == "__main__":
     unittest.main()

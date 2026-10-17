@@ -164,5 +164,67 @@ class PartialColumnTest(unittest.TestCase):
         self.assertFalse(partial["2026-10-01"])
 
 
+class DailyAndRedistributionTest(unittest.TestCase):
+    def test_daily_periods_are_contiguous_up_to_the_latest_collection_day(self):
+        m = model()
+        days = [p["start"] for p in m["periods"]["daily"]]
+        self.assertEqual(days[0], "2026-09-24")
+        self.assertEqual(days[-1], "2026-10-12")  # 마지막 수집일. 문서가 없는 날도 포함
+        self.assertEqual(len(days), 19)
+        self.assertEqual(len(set(days)), len(days))
+        # 문서가 없는 날은 빈 결과로 보인다 (10-03: 분석 문서 없음)
+        v = m["views"]["daily|2026-10-03|all"]
+        self.assertEqual((v["analyzed"], v["stats"], v["csvTotal"]), (0, [], None))
+        # 10-02는 중복 제외 문서만 있어 분석 문서는 0건, 제외는 1건
+        v = m["views"]["daily|2026-10-02|news"]
+        self.assertEqual((v["analyzed"], v["excluded"]), (0, 1))
+
+    def test_daily_values_match_the_hand_computed_fixture(self):
+        v = model()["views"]["daily|2026-09-24|all"]
+        self.assertEqual(v["analyzed"], 2)
+        self.assertEqual([(r["kw"], r["dc"], r["oc"], r["rank"]) for r in v["stats"]],
+                         [("반도체", 2, 3, "1"), ("인공지능", 2, 2, "1")])
+
+    def test_daily_is_hidden_when_stats_have_no_daily_rows(self):
+        m = model(stats_filter=lambda r: r["period_type"] != "daily")
+        self.assertEqual(m["periods"]["daily"], [])
+        self.assertEqual(len(m["periods"]["weekly"]), 3)
+
+    def test_the_day_containing_the_collection_end_is_partial(self):
+        partial = {p["start"]: p["partial"] for p in model()["periods"]["daily"]}
+        self.assertTrue(partial["2026-10-12"])
+        self.assertFalse(partial["2026-10-05"])
+
+    def test_coverage_and_common_range(self):
+        m = model()
+        self.assertEqual(m["coverage"], {"news": ["2026-09-24", "2026-10-01"], "policy": ["2026-09-28", "2026-10-05"]})
+        self.assertEqual(m["commonRange"], ["2026-09-28", "2026-10-01"])
+
+    def test_title_of_no_publish_source_never_reaches_the_page(self):
+        docs, stats = app.read_csv(DOCS), app.read_csv(STATS)
+        m = app.build_model(docs, app.read_csv(KEYWORDS), stats, generated_at="2026-10-17T00:00:00+09:00",
+                            hidden_sources=frozenset({"fixture-policy"}))
+        policy = [d for d in m["docs"] if d["y"] == "policy"]
+        self.assertTrue(policy)
+        self.assertTrue(all(d["t"] == "" and d["h"] == 1 and d["u"].startswith("https://") and d["d"] for d in policy))
+        news = [d for d in m["docs"] if d["y"] == "news"]
+        self.assertTrue(all(d["t"] and "h" not in d for d in news))
+        page = app.render_html(m)
+        self.assertNotIn("IT 인프라 반도체 지원", page)
+        self.assertIn("인공지능 반도체 투자 확대", page)
+
+    def test_load_hidden_sources_reads_redistribution(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "sources.csv"
+            path.write_text("\n".join([
+                "source_id,source_name,redistribution",
+                "a,공개 출처,metadata_only",
+                "b,비공개 출처,local_only_no_publish",
+            ]) + "\n", encoding="utf-8")
+            self.assertEqual(app.load_hidden_sources(path), frozenset({"비공개 출처"}))
+            self.assertEqual(app.load_hidden_sources(Path(tmp) / "none.csv"), frozenset())
+
+
 if __name__ == "__main__":
     unittest.main()

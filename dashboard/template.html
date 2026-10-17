@@ -69,6 +69,8 @@ main h2 { margin: 0 0 6px; font-size: 1.15rem; letter-spacing: -0.01em; }
 .docs .m { margin-left: 12px; font-size: 0.82rem; color: var(--muted); }
 .fine { margin: 10px 0 0; font-size: 0.84rem; color: var(--muted); max-width: 70ch; }
 .scroll { overflow-x: auto; margin-top: 10px; }
+.trendunit { margin: 18px 0 0; font-size: 0.98rem; }
+.trendunit small { font-weight: 400; color: var(--muted); }
 table { border-collapse: collapse; min-width: 100%; font-size: 0.9rem; }
 th, td { padding: 6px 10px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
 th { font-weight: 600; color: var(--muted); }
@@ -111,9 +113,9 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       <p class="fine" id="rankMsg"></p>
     </section>
     <section class="block" aria-labelledby="trendHead">
-      <h2 id="trendHead">기간별 추이</h2>
+      <h2 id="trendHead">키워드 추이</h2>
       <p class="sum" id="trendSum"></p>
-      <div class="scroll"><table id="trend"></table></div>
+      <div id="trendBox"></div>
     </section>
   </main>
 </div>
@@ -124,7 +126,11 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   var M = JSON.parse(document.getElementById('model').textContent);
   var TYPE_LABEL = {};
   M.types.forEach(function (t) { TYPE_LABEL[t.id] = t.label; });
-  var PT = [{ id: 'weekly', label: '주간' }, { id: 'monthly', label: '월간' }];
+  var PT = [{ id: 'daily', label: '일간' }, { id: 'weekly', label: '주간' }, { id: 'monthly', label: '월간' }];
+  var TREND_WINDOW = { daily: 14, weekly: 8, monthly: 6 };
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  function firstUnit() { return plist('daily').length ? 'daily' : (plist('weekly').length ? 'weekly' : 'monthly'); }
+  function todayKst() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
   var TOPS = [5, 10, 20, 50];
   var state;
 
@@ -139,8 +145,9 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   function vkey(pt, start, type) { return pt + '|' + start + '|' + type; }
   function isHttp(u) { return /^https?:\/\//i.test(u || ''); }
   function plist(pt) { return M.periods[pt] || []; }
-  function plabel(p) { return p.start + ' ~ ' + p.end + (p.partial ? ' (부분 기간)' : ''); }
+  function plabel(p) { return (p.start === p.end ? p.start : p.start + ' ~ ' + p.end) + (p.partial ? ' (부분 기간)' : ''); }
   function optLabel(p) {
+    if (p.start === p.end) return p.start + ' (' + DOW[new Date(p.start + 'T00:00:00').getDay()] + ')' + (p.partial ? ' (부분)' : '');
     var end = p.end.slice(0, 4) === p.start.slice(0, 4) ? p.end.slice(5) : p.end;
     return p.start + ' ~ ' + end + (p.partial ? ' (부분)' : '');
   }
@@ -160,6 +167,18 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     return Object.keys(obj).reduce(function (a, k) { return a + obj[k]; }, 0);
   }
 
+  // 기본으로 보여 줄 기간: 가장 최근 기간. 일간은 자료가 있는 가장 최근 날(오늘 자료가 없을 때 빈 화면을 피함).
+  function defaultPeriod(pt) {
+    var l = plist(pt);
+    if (!l.length) return '';
+    if (pt === 'daily') {
+      for (var i = l.length - 1; i >= 0; i--) {
+        var v = M.views[vkey('daily', l[i].start, 'all')];
+        if (v && v.analyzed > 0) return l[i].start;
+      }
+    }
+    return l[l.length - 1].start;
+  }
   function readHash() {
     var q = {};
     location.hash.replace(/^#/, '').split('&').forEach(function (kv) {
@@ -167,10 +186,9 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       if (i < 0) return;
       try { q[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* 잘못된 값은 무시 */ }
     });
-    var s = { pt: plist('weekly').length ? 'weekly' : 'monthly', type: 'all', n: 10, open: q.open || '' };
+    var s = { pt: firstUnit(), type: 'all', n: 10, open: q.open || '' };
     if (q.pt && plist(q.pt).length) s.pt = q.pt;
-    var l = plist(s.pt);
-    s.period = l.length ? l[l.length - 1].start : '';
+    s.period = defaultPeriod(s.pt);
     if (q.p && findPeriod(s.pt, q.p)) s.period = q.p;
     if (q.t && TYPE_LABEL[q.t]) s.type = q.t;
     if (q.n && TOPS.indexOf(parseInt(q.n, 10)) >= 0) s.n = parseInt(q.n, 10);
@@ -191,7 +209,7 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       b.disabled = !plist(o.id).length;
       b.addEventListener('click', function () {
         var l = plist(o.id);
-        state.pt = o.id; state.period = l[l.length - 1].start; state.open = '';
+        state.pt = o.id; state.period = defaultPeriod(o.id); state.open = '';
         update();
       });
       ptBox.appendChild(b);
@@ -217,6 +235,9 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       top.appendChild(o);
     });
     var cov = $('coverage'); clear(cov);
+    Object.keys(M.coverage || {}).forEach(function (k) {
+      cov.appendChild(covLine((TYPE_LABEL[k] || k) + ' 자료', M.coverage[k][0].slice(5) + ' ~ ' + M.coverage[k][1].slice(5)));
+    });
     if (M.latestCollected) {
       cov.appendChild(covLine('수집 종료일', M.latestCollected));
       cov.appendChild(covLine('화면 생성', M.generatedAt.replace('T', ' ').slice(0, 16)));
@@ -229,13 +250,34 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     var box = $('status'); clear(box);
     var p = findPeriod(state.pt, state.period), v = M.views[vkey(state.pt, state.period, state.type)];
     var label = TYPE_LABEL[state.type];
-    box.appendChild(el('h2', null, p.start + ' ~ ' + p.end));
+    box.appendChild(el('h2', null, p.start === p.end ? p.start + ' (' + DOW[new Date(p.start + 'T00:00:00').getDay()] + ')' : p.start + ' ~ ' + p.end));
+    if (state.pt === 'daily') {
+      var today = todayKst(), lastDay = defaultPeriod('daily');
+      if (state.period === today) {
+        box.appendChild(el('p', 'note', '오늘의 키워드입니다.'));
+      } else if (state.period === lastDay && today > lastDay) {
+        box.appendChild(el('p', 'note', '오늘(' + today + ') 분석한 문서가 없습니다. 자료가 있는 가장 최근 날짜(' + lastDay + ')를 보여 줍니다.'));
+      }
+    }
     box.appendChild(el('p', 'sum', label + ' 자료에서 분석한 문서는 ' + v.analyzed + '건이고, 이 기간에 제외한 문서는 ' + v.excluded + '건입니다.'));
     if (p.partial) {
-      box.appendChild(el('p', 'note partial', '부분 기간입니다. 이 기간은 수집 종료일(' + M.latestCollected + ')보다 뒤까지 이어지므로 이후 수집분이 들어오면 수치가 바뀝니다.'));
+      box.appendChild(el('p', 'note partial', '부분 기간입니다. 수집 종료일(' + M.latestCollected + ')이 이 기간 안에 있거나 기간이 그 뒤까지 이어지므로, 이후 수집분이 들어오면 수치가 바뀝니다.'));
     }
     if (v.csvTotal !== null && v.csvTotal !== v.analyzed) {
       box.appendChild(el('p', 'note alert', 'keyword_stats.csv의 total_documents(' + v.csvTotal + ')와 documents.csv에서 센 분석 문서 수(' + v.analyzed + ')가 다릅니다. 두 파일을 같은 실행 결과로 다시 만드세요.'));
+    }
+    if (state.type === 'all') {
+      ['news', 'policy'].forEach(function (k) {
+        var pv = M.views[vkey(state.pt, state.period, k)];
+        if (pv && pv.analyzed === 0) {
+          box.appendChild(el('p', 'note alert', '이 기간에는 ' + TYPE_LABEL[k] + ' 자료가 없어 통합 결과에 반영되지 않았습니다. 뉴스와 정책을 비교하려면 두 유형의 자료가 모두 있는 기간을 고르세요.'));
+        }
+      });
+      var cr = M.commonRange, cv = M.coverage || {};
+      var ks = Object.keys(cv);
+      if (ks.length > 1 && (!cr || ks.some(function (k) { return cv[k][0] !== cr[0] || cv[k][1] !== cr[1]; }))) {
+        box.appendChild(el('p', 'note', '뉴스와 정책의 자료 범위가 다릅니다' + (cr ? ' (공통 범위 ' + cr[0] + ' ~ ' + cr[1] + ')' : ' (겹치는 기간 없음)') + '. 공통 범위 밖의 기간은 한쪽 유형만 반영됩니다.'));
+      }
     }
     var failed = sumOver(M.overall.failed, state.type);
     if (failed > 0) {
@@ -256,12 +298,12 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     }
     var ul = el('ul', 'docs');
     idxs.forEach(function (i) {
-      var d = M.docs[i], li = el('li'), t;
+      var d = M.docs[i], li = el('li'), t, text = d.h ? '(제목 비공개 · 원문에서 확인)' : d.t;
       if (isHttp(d.u)) {
-        t = el('a', null, d.t);
+        t = el('a', null, text);
         t.href = d.u; t.target = '_blank'; t.rel = 'noopener noreferrer';
       } else {
-        t = el('span', null, d.t);
+        t = el('span', null, text);
       }
       li.appendChild(t);
       li.appendChild(el('span', 'm', d.d));
@@ -330,17 +372,16 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     msg.textContent = note;
   }
 
-  function renderTrend() {
-    var table = $('trend'), sum = $('trendSum');
-    clear(table);
-    var v = M.views[vkey(state.pt, state.period, state.type)];
-    if (!v.stats.length) { sum.textContent = '표시할 키워드가 없어 추이를 그리지 않습니다.'; return; }
-    var kws = v.stats.slice(0, state.n), periods = plist(state.pt);
-    sum.textContent = '현재 기간의 상위 ' + kws.length + '개 키워드가 각 기간에 몇 개 문서에서 언급됐는지 보여 줍니다. 굵은 테두리는 선택한 기간입니다. ‘–’는 그 기간에 분석한 문서가 없다는 뜻입니다.';
-    table.className = 't-' + state.type;
+  function trendTable(unit, kws, curStart) {
+    var all = plist(unit), end = all.length;
+    if (unit === state.pt) {
+      for (var i = 0; i < all.length; i++) { if (all[i].start === state.period) { end = i + 1; break; } }
+    }
+    var periods = all.slice(Math.max(0, end - TREND_WINDOW[unit]), end);
+    var table = el('table', 't-' + state.type);
     var cells = {}, max = 1;
     periods.forEach(function (p) {
-      var pv = M.views[vkey(state.pt, p.start, state.type)];
+      var pv = M.views[vkey(unit, p.start, state.type)];
       kws.forEach(function (k) {
         var r = pv && pv.analyzed > 0 ? (pv.map[k.id] || { dc: 0 }) : null;
         cells[p.start + '|' + k.id] = r;
@@ -350,9 +391,11 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     var head = el('tr');
     head.appendChild(el('th', null, '키워드'));
     periods.forEach(function (p) {
-      var th = el('th', p.start === state.period ? 'cur' : null, state.pt === 'monthly' ? p.start.slice(0, 7) : p.start.slice(5));
+      var cur = unit === state.pt && p.start === curStart;
+      var th = el('th', cur ? 'cur' : null, unit === 'monthly' ? p.start.slice(0, 7) : p.start.slice(5));
       th.title = plabel(p);
-      if (state.pt === 'weekly') th.appendChild(el('small', null, '~' + p.end.slice(5)));
+      if (unit === 'weekly') th.appendChild(el('small', null, '~' + p.end.slice(5)));
+      if (unit === 'daily') th.appendChild(el('small', null, DOW[new Date(p.start + 'T00:00:00').getDay()]));
       if (p.partial) th.appendChild(el('small', null, '부분'));
       head.appendChild(th);
     });
@@ -362,8 +405,9 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       var tr = el('tr');
       tr.appendChild(el('td', null, k.kw));
       periods.forEach(function (p) {
-        var r = cells[p.start + '|' + k.id], pv = M.views[vkey(state.pt, p.start, state.type)];
-        var td = el('td', 'cell' + (p.start === state.period ? ' cur' : ''), r ? String(r.dc) : '–');
+        var r = cells[p.start + '|' + k.id], pv = M.views[vkey(unit, p.start, state.type)];
+        var cur = unit === state.pt && p.start === curStart;
+        var td = el('td', 'cell' + (cur ? ' cur' : ''), r ? String(r.dc) : '–');
         if (r) {
           td.style.setProperty('--i', r.dc / max);
           td.title = '문서 ' + r.dc + '건 (분석 ' + pv.analyzed + '건 중)';
@@ -375,6 +419,26 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
+    return { table: table, count: periods.length };
+  }
+
+  function renderTrend() {
+    var box = $('trendBox'), sum = $('trendSum');
+    clear(box);
+    var v = M.views[vkey(state.pt, state.period, state.type)];
+    if (!v.stats.length) { sum.textContent = '표시할 키워드가 없어 추이를 그리지 않습니다.'; return; }
+    var kws = v.stats.slice(0, state.n);
+    sum.textContent = '선택한 기간의 상위 ' + kws.length + '개 키워드가 일간·주간·월간 기간마다 몇 개 문서에서 언급됐는지 보여 줍니다. 굵은 테두리는 선택한 기간입니다. ‘–’는 그 기간에 분석한 문서가 없다는 뜻입니다. 증감을 ‘급증’ 같은 말로 판정하지 않고 건수만 보여 줍니다.';
+    PT.forEach(function (o) {
+      if (!plist(o.id).length) return;
+      var res = trendTable(o.id, kws, state.period);
+      var h = el('h3', 'trendunit', o.label + ' 추이 ');
+      h.appendChild(el('small', null, '(최근 ' + res.count + '개)'));
+      box.appendChild(h);
+      var wrap = el('div', 'scroll');
+      wrap.appendChild(res.table);
+      box.appendChild(wrap);
+    });
   }
 
   function render() {

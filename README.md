@@ -36,16 +36,18 @@ python dashboard/app.py --dir tests/fixtures --stats tests/fixtures/expected/key
 
 ## 3. 실제 자료 실행
 
-`config/sources.csv` 에서 상태가 `terms_ok` 인 뉴스 RSS 출처(긱뉴스, 전자신문 AI·SW, ZDNet Korea, 보안뉴스 IT·과학)의 공개 피드를 **출처마다 1회만** 요청한다(재시도 없음). 피드는 최근 15~50건만 준다.
+`config/sources.csv` 에서 상태가 `terms_ok` 인 뉴스 RSS 출처(긱뉴스, 전자신문 AI·SW, ZDNet Korea, 보안뉴스 IT·과학)의 공개 피드를 **출처마다 1회만** 요청한다(재시도 없음). 피드는 최근 15~50건만 주기 때문에, 실행할 때마다 받은 항목을 `data/raw/news_items.csv` 에 **누적**하고 `documents.csv` 는 누적본 전체로 다시 만든다. 며칠 모으면 일간·주간 추이가 쌓인다(Git에는 올리지 않음).
 
 ```bash
 python src/collect_news.py rss --from 2026-10-01 --to 2026-10-31
 python src/extract_keywords.py --text-dir data/processed/texts
-python src/validate_csv.py --documents data/processed/documents.csv --keywords data/processed/document_keywords.csv
+python src/validate_csv.py --documents data/processed/documents.csv --keywords data/processed/document_keywords.csv --sources config/sources.csv
 ```
 
-특정 출처만 수집하려면 `--sources news-002,news-004` 를 붙인다. 한 출처가 실패해도 나머지는 수집하고, 실패한 출처는 종료 코드 1과 `data/processed/collect_log.json` 의 사유(`fetch_error`, `parse_error`)로 알린다.
-정책 자료 수집과 집계 단계는 B 구현 후 추가한다.
+- 특정 출처만: `--sources news-002,news-004` (수집기), 누적 없이 이번 결과만: `--no-accumulate`.
+- 한 출처가 실패해도 나머지는 수집하고, 실패한 출처는 종료 코드 1과 `data/processed/collect_log.json` 의 사유(`fetch_error`, `parse_error`)로 알린다.
+- 마지막 명령은 뉴스와 정책의 수집 기간이 같은지도 경고한다. 기준은 [docs/period_policy.md](docs/period_policy.md).
+- 정책 자료 수집과 집계 단계는 B 구현 후 추가한다. 대시보드의 **일간 보기**는 집계 결과에 `daily` 기간이 있어야 나온다.
 
 ## 4. 결과 확인
 
@@ -61,7 +63,7 @@ python src/validate_csv.py --documents data/processed/documents.csv --keywords d
 ## 5. 분석 기준
 
 - 사전 기반 매칭, 동의어는 표준 키워드로 정규화한다. 규칙: [docs/extraction_rules.md](docs/extraction_rules.md), 사전: [docs/dictionary_v1.md](docs/dictionary_v1.md)
-- 주 지표는 문서 빈도, 출현 횟수는 보조 지표다. 주간은 월~일, 월간은 달력 월, 한국 표준시 기준
+- 주 지표는 문서 빈도, 출현 횟수는 보조 지표다. 일간은 하루, 주간은 월~일, 월간은 달력 월, 한국 표준시 기준. 뉴스와 정책은 같은 기간으로 비교한다 ([docs/period_policy.md](docs/period_policy.md))
 - 키워드 출현을 곧 기술의 중요도나 정책 효과로 해석하지 않는다. 정확도·탐지 성능 수치는 주장하지 않는다
 
 ## 6. 문제 해결

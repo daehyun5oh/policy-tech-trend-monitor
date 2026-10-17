@@ -7,6 +7,12 @@
          출처 사이에 간격을 둔다. 로그인·API·페이지 크롤링은 하지 않는다.
   csv  : 이미 수동으로 모은 목록(date,title,url)을 읽는다 (긱뉴스 샘플). 네트워크를 쓰지 않는다.
 
+누적 (rss 모드): 피드는 최근 기사만 주므로 한 번 수집으로는 기간을 채울 수 없다. 그래서 수집할 때마다
+  받은 항목을 --raw-dir(기본 data/raw)의 news_items.csv 에 쌓고(이미 본 항목은 처음 수집한 시각을 유지),
+  documents.csv 는 그 누적본 전체로 다시 만든다. 이렇게 며칠 모으면 일간·주간 추이를 볼 수 있다.
+  --no-accumulate 를 주면 이번에 받은 항목만 쓴다. csv 모드는 누적하지 않는다.
+  documents.csv 에 뉴스가 아닌 문서(정책 등)가 있으면 그대로 보존한다.
+
 출력 (--out-dir, 기본 data/processed):
   documents.csv      공통 규격(src/schema.py)의 수집 문서 목록 (출처 전체를 한 파일에 모음)
   texts/<id>.txt     피드가 준 요약·본문 텍스트 (analysis_scope 가 title_summary/title_body 인 문서만,
@@ -182,6 +188,51 @@ def load_news_sources(path, wanted=None):
     return chosen
 
 
+RAW_COLUMNS = ["source_name", "source_document_id", "title", "url", "published", "text", "full_text", "first_collected_at"]
+
+
+def item_key(item):
+    name = item.get("source_name") or CSV_SOURCE_NAME
+    if item.get("source_document_id"):
+        return (name, "sid", item["source_document_id"])
+    return (name, "url", normalize_url(item["url"]) if item.get("url") else item.get("title", ""))
+
+
+def load_raw_items(path):
+    if not Path(path).exists():
+        return []
+    with open(path, encoding="utf-8", newline="") as f:
+        return [{"source_name": r["source_name"], "source_document_id": r["source_document_id"], "title": r["title"],
+                 "url": r["url"], "published": r["published"], "text": r["text"], "full_text": r["full_text"] == "1",
+                 "collected_at": r["first_collected_at"]} for r in csv.DictReader(f)]
+
+
+def merge_raw_items(old, new, collected_at):
+    """이미 있는 항목은 그대로 두고(처음 수집한 시각 유지) 새 항목만 뒤에 붙인다. 반환: (전체, 새로 늘어난 수)."""
+    seen = {item_key(i) for i in old}
+    merged, added = list(old), 0
+    for it in new:
+        k = item_key(it)
+        if k in seen:
+            continue
+        seen.add(k)
+        merged.append(dict(it, collected_at=collected_at))
+        added += 1
+    return merged, added
+
+
+def save_raw_items(path, items):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=RAW_COLUMNS, lineterminator="\n")
+        w.writeheader()
+        for i in items:
+            w.writerow({"source_name": i.get("source_name") or CSV_SOURCE_NAME,
+                        "source_document_id": i.get("source_document_id", ""), "title": i["title"], "url": i["url"],
+                        "published": i["published"], "text": i["text"], "full_text": "1" if i.get("full_text") else "0",
+                        "first_collected_at": i["collected_at"]})
+
+
 def build_documents(items, collected_at, date_from=None, date_to=None, source_name=CSV_SOURCE_NAME):
     """항목을 documents.csv 행으로 바꾼다. 항목에 source_name 이 있으면 그것을 쓴다.
     반환: (행 목록, {document_id: 요약·본문 텍스트})."""
@@ -198,7 +249,7 @@ def build_documents(items, collected_at, date_from=None, date_to=None, source_na
             "source_type": "news", "source_name": name,
             "source_document_id": item["source_document_id"], "title": title,
             "original_url": url, "published_date": published.isoformat() if published else "",
-            "collected_at": collected_at, "analysis_scope": scope,
+            "collected_at": item.get("collected_at") or collected_at, "analysis_scope": scope,
         })
         if not title or not re.match(r"https?://", url):
             row.update(document_id=make_document_id(name, item["source_document_id"], url or title),
@@ -230,8 +281,20 @@ def build_documents(items, collected_at, date_from=None, date_to=None, source_na
     return rows, texts
 
 
+def read_other_rows(path):
+    """기존 documents.csv 에서 뉴스가 아닌 행(정책 등)을 읽는다. 다른 담당자의 결과를 지우지 않기 위해서다."""
+    if not Path(path).exists():
+        return []
+    try:
+        with open(path, encoding="utf-8-sig", newline="") as f:
+            return [r for r in csv.DictReader(f) if r.get("source_type") != "news"]
+    except (OSError, UnicodeDecodeError, csv.Error):
+        return []
+
+
 def write_outputs(out_dir, rows, texts, log):
     out_dir.mkdir(parents=True, exist_ok=True)
+    rows = list(rows) + [{k: (r.get(k) or "") for k in DOCUMENT_COLUMNS} for r in read_other_rows(out_dir / "documents.csv")]
     with open(out_dir / "documents.csv", "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=DOCUMENT_COLUMNS, lineterminator="\n")
         w.writeheader()
@@ -283,6 +346,8 @@ def main(argv=None):
     p.add_argument("--from", dest="date_from", help="수집 시작일 YYYY-MM-DD (포함)")
     p.add_argument("--to", dest="date_to", help="수집 종료일 YYYY-MM-DD (포함)")
     p.add_argument("--out-dir", default="data/processed")
+    p.add_argument("--raw-dir", default="data/raw", help="rss 모드에서 받은 항목을 누적하는 폴더 (기본 data/raw, Git 제외)")
+    p.add_argument("--no-accumulate", action="store_true", help="누적하지 않고 이번에 받은 항목만 사용")
     p.add_argument("--sources-file", default=str(DEFAULT_SOURCES_FILE))
     p.add_argument("--sources", help="rss 모드에서 수집할 source_id 목록(쉼표 구분). 기본은 수집 가능한 전체")
     args = p.parse_args(argv)
@@ -326,6 +391,12 @@ def main(argv=None):
                 print("수집 실패 [%s %s] (%s): %s" % (s["source_id"], s["source_name"], s["failure_reason"], s["detail"]),
                       file=sys.stderr)
 
+    if args.mode == "rss" and not args.no_accumulate:
+        raw_path = Path(args.raw_dir) / "news_items.csv"
+        merged, added = merge_raw_items(load_raw_items(raw_path), items, collected_at)
+        save_raw_items(raw_path, merged)
+        log["accumulated"] = {"store": str(raw_path), "added": added, "total": len(merged)}
+        items = merged
     rows, texts = build_documents(items, collected_at, date_from, date_to)
     counts, reasons = summarize(rows)
     by_source = {}

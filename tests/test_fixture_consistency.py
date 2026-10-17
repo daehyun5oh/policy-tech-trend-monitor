@@ -34,6 +34,7 @@ class FixtureConsistencyTest(unittest.TestCase):
         periods = set()
         for d in docs.values():
             day = dt.date.fromisoformat(d["published_date"])
+            periods.add(("daily", day, day))
             periods.add(("weekly",) + week(day))
             periods.add(("monthly",) + month(day))
 

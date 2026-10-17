@@ -197,6 +197,8 @@ def validate_stats(path, keyword_ids, report):
             report.add(name, n, "source_type은 %s 중 하나여야 함 (값: %r)" % ("/".join(STATS_SOURCE_TYPES), st))
         if start is None or end is None:
             report.add(name, n, "period_start/period_end는 유효한 YYYY-MM-DD여야 함")
+        elif pt == "daily" and start != end:
+            report.add(name, n, "일간은 시작일과 종료일이 같아야 함 (%s ~ %s)" % (start, end))
         elif pt == "weekly" and not (start.weekday() == 0 and end == start + dt.timedelta(days=6)):
             report.add(name, n, "주간은 월요일~일요일이어야 함 (%s ~ %s)" % (start, end))
         elif pt == "monthly" and not (start.day == 1 and end == month_end(start)):
@@ -263,6 +265,41 @@ def validate_stats(path, keyword_ids, report):
     report.summary.append("%s %d행" % (name, len(rows)))
 
 
+def period_warnings(documents=None, sources=None):
+    """뉴스와 정책이 같은 기간을 다루는지 확인한다 (기획안 §3, §9: 두 유형을 같은 기준으로 비교).
+    오류가 아니라 경고 목록을 돌려준다.
+
+    - 출처 목록: 수집 가능(terms_ok 계열) 출처의 collect_from/collect_to 가 뉴스와 정책에서 같아야 한다.
+    - 문서 목록: 분석 완료 문서의 발행일 범위가 뉴스와 정책에서 겹쳐야 하고, 범위가 다르면 공통 범위를 알려 준다.
+    """
+    out = []
+    if sources:
+        windows = defaultdict(set)
+        with open(sources, encoding="utf-8-sig", newline="") as f:
+            for r in csv.DictReader(f):
+                if (r.get("access_check_status") or "").startswith("terms_ok") and r.get("collect_from") and r.get("collect_to"):
+                    windows[r["source_type"]].add((r["collect_from"], r["collect_to"]))
+        if len(windows) == len(SOURCE_TYPES) and len({w for ws in windows.values() for w in ws}) > 1:
+            detail = "; ".join("%s %s" % (t, ", ".join("%s~%s" % w for w in sorted(ws))) for t, ws in sorted(windows.items()))
+            out.append("수집 기간이 출처마다 다름 (%s). 뉴스와 정책은 같은 기간으로 맞춰야 비교할 수 있음 (docs/period_policy.md)" % detail)
+    if documents:
+        ranges = defaultdict(list)
+        with open(documents, encoding="utf-8-sig", newline="") as f:
+            for r in csv.DictReader(f):
+                day = parse_date((r.get("published_date") or "").strip())
+                if (r.get("status") or "").strip() == STATUS_ANALYZED and day is not None:
+                    ranges[(r.get("source_type") or "").strip()].append(day)
+        if len(ranges) == len(SOURCE_TYPES):
+            span = {t: (min(d), max(d)) for t, d in ranges.items()}
+            lo, hi = max(s[0] for s in span.values()), min(s[1] for s in span.values())
+            text = ", ".join("%s %s~%s" % (t, s[0], s[1]) for t, s in sorted(span.items()))
+            if lo > hi:
+                out.append("뉴스와 정책의 분석 문서 발행일 범위가 겹치지 않음 (%s)" % text)
+            elif any(s != (lo, hi) for s in span.values()):
+                out.append("뉴스와 정책의 분석 문서 발행일 범위가 다름 (%s). 비교는 공통 범위 %s~%s에서만 해석할 것" % (text, lo, hi))
+    return out
+
+
 def run(documents=None, keywords=None, stats=None):
     report = Report()
     docs = validate_documents(documents, report) if documents else None
@@ -279,6 +316,8 @@ def main(argv=None):
     p.add_argument("--keywords")
     p.add_argument("--stats")
     p.add_argument("--max-errors", type=int, default=50, help="화면에 표시할 오류 수 (기본 50)")
+    p.add_argument("--sources", help="출처 목록(config/sources.csv). 주면 뉴스·정책 수집 기간이 같은지 경고함")
+    p.add_argument("--strict-period", action="store_true", help="기간 경고가 있으면 종료 코드 1로 끝냄")
     args = p.parse_args(argv)
     documents, keywords, stats = args.documents, args.keywords, args.stats
     if args.dir:
@@ -301,7 +340,18 @@ def main(argv=None):
     if len(report.errors) > args.max_errors:
         print("... 외 %d건 (--max-errors로 더 볼 수 있음)" % (len(report.errors) - args.max_errors))
     print("검증 결과: 오류 %d건" % len(report.errors))
-    return 1 if report.errors else 0
+    warnings = []
+    if documents or args.sources:
+        try:
+            warnings = period_warnings(documents if documents and Path(documents).exists() else None, args.sources)
+        except OSError as e:
+            print("오류: %s" % e, file=sys.stderr)
+            return 2
+    for w in warnings:
+        print("경고 기간: %s" % w)
+    if report.errors or (warnings and args.strict_period):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

@@ -134,5 +134,47 @@ class RssFeedTest(unittest.TestCase):
         self.assertTrue(all(i["source_name"] == "뉴스1" for i in items))
 
 
+class AccumulationTest(unittest.TestCase):
+    def items(self, *ids):
+        return [{"title": "기사 %s" % i, "url": "https://a.test/%s" % i, "source_document_id": "", "published": "2026-10-1%s" % i,
+                 "text": "요약", "full_text": False, "source_name": "A사"} for i in ids]
+
+    def test_new_items_are_added_and_old_ones_keep_their_first_collection_time(self):
+        first, added = cn.merge_raw_items([], self.items(1, 2), "2026-10-17T09:00:00+09:00")
+        self.assertEqual(added, 2)
+        second, added = cn.merge_raw_items(first, self.items(2, 3), "2026-10-18T09:00:00+09:00")
+        self.assertEqual(added, 1)
+        self.assertEqual([i["collected_at"][:10] for i in second], ["2026-10-17", "2026-10-17", "2026-10-18"])
+
+    def test_documents_are_rebuilt_from_the_whole_store_with_first_seen_time(self):
+        merged, _ = cn.merge_raw_items([], self.items(1), "2026-10-17T09:00:00+09:00")
+        merged, _ = cn.merge_raw_items(merged, self.items(2), "2026-10-18T09:00:00+09:00")
+        rows, _ = cn.build_documents(merged, "2026-10-18T09:00:00+09:00")
+        self.assertEqual([r["collected_at"][:10] for r in rows], ["2026-10-17", "2026-10-18"])
+
+    def test_store_round_trip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "raw" / "news_items.csv"
+            merged, _ = cn.merge_raw_items([], self.items(1, 2), "2026-10-17T09:00:00+09:00")
+            cn.save_raw_items(path, merged)
+            self.assertEqual(cn.load_raw_items(path), merged)
+
+    def test_policy_rows_in_documents_csv_survive_a_news_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            fields = cn.DOCUMENT_COLUMNS
+            with open(out / "documents.csv", "w", encoding="utf-8", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
+                w.writeheader()
+                w.writerow(dict.fromkeys(fields, "") | {"document_id": "policy-x", "source_type": "policy", "title": "정책 문서"})
+                w.writerow(dict.fromkeys(fields, "") | {"document_id": "news-old", "source_type": "news", "title": "옛 뉴스"})
+            rows, texts = cn.build_documents(self.items(1), NOW)
+            cn.write_outputs(out, rows, texts, {})
+            with open(out / "documents.csv", encoding="utf-8", newline="") as f:
+                got = [r["document_id"] for r in csv.DictReader(f)]
+            self.assertIn("policy-x", got)
+            self.assertNotIn("news-old", got)  # 뉴스 행은 이번 결과로 다시 만든다
+
+
 if __name__ == "__main__":
     unittest.main()
