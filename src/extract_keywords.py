@@ -155,8 +155,25 @@ def read_documents(path):
         return list(csv.DictReader(f))
 
 
+# 본문 파일(<document_id>.txt)을 찾는 기본 폴더. 정책 수집기는 data/raw, 뉴스 수집기는 data/processed/texts 에 쓴다.
+DEFAULT_TEXT_DIRS = ("data/raw", "data/processed/texts")
+
+
+def as_dirs(text_dir):
+    """text_dir 는 None, 폴더 하나, 폴더 여러 개(목록) 중 무엇이든 받는다."""
+    if text_dir is None:
+        return []
+    if isinstance(text_dir, (str, Path)):
+        return [Path(text_dir)]
+    return [Path(d) for d in text_dir]
+
+
 def extract_documents(documents, dictionary, text_dir=None):
-    """(출력 행 목록, 오류 메시지 목록, 분석 대상 문서 수)를 반환한다."""
+    """(출력 행 목록, 오류 메시지 목록, 분석 대상 문서 수)를 반환한다.
+
+    text_dir 에 폴더 여러 개를 주면 앞에서부터 <document_id>.txt 를 찾아 처음 있는 파일을 쓴다.
+    """
+    dirs = as_dirs(text_dir)
     out, errors, analyzed = [], [], 0
     for n, doc in enumerate(documents, start=2):
         if (doc.get("status") or "").strip() != STATUS_ANALYZED:
@@ -173,13 +190,14 @@ def extract_documents(documents, dictionary, text_dir=None):
             continue
         segments = [doc.get("title") or ""]
         if scope != "title":
-            if text_dir is None:
-                errors.append("%s: analysis_scope=%s 이지만 --text-dir가 지정되지 않음" % (where, scope))
+            if not dirs:
+                errors.append("%s: analysis_scope=%s 이지만 본문 폴더가 없음 (--text-dir 로 지정)" % (where, scope))
                 continue
             if not SAFE_ID.fullmatch(doc_id):
                 errors.append("%s: document_id에 파일 이름으로 쓸 수 없는 문자가 있음" % where)
                 continue
-            path = Path(text_dir) / (doc_id + ".txt")
+            path = next((d / (doc_id + ".txt") for d in dirs if (d / (doc_id + ".txt")).is_file()),
+                        dirs[0] / (doc_id + ".txt"))
             try:
                 segments.append(path.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError) as e:
@@ -211,7 +229,9 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="분석 완료 문서에서 기술키워드를 추출해 document_keywords.csv를 만든다.")
     p.add_argument("--documents", default="data/processed/documents.csv")
     p.add_argument("--dictionary", default="config/keywords.csv")
-    p.add_argument("--text-dir", default=None, help="title_summary/title_body 범위 문서의 <document_id>.txt 폴더")
+    p.add_argument("--text-dir", action="append", default=None, metavar="DIR",
+                   help="title_summary/title_body 범위 문서의 <document_id>.txt 폴더. 여러 번 줄 수 있고 "
+                        "주지 않으면 %s 를 차례로 찾는다" % ", ".join(DEFAULT_TEXT_DIRS))
     p.add_argument("--out", default="data/processed/document_keywords.csv")
     args = p.parse_args(argv)
 
@@ -222,7 +242,8 @@ def main(argv=None):
         print("오류: %s" % e, file=sys.stderr)
         return 2
 
-    rows, errors, analyzed = extract_documents(documents, dictionary, args.text_dir)
+    text_dirs = args.text_dir if args.text_dir else [d for d in DEFAULT_TEXT_DIRS if Path(d).is_dir()]
+    rows, errors, analyzed = extract_documents(documents, dictionary, text_dirs)
     write_rows(args.out, rows)
     with_keywords = len({r["document_id"] for r in rows})
     print("사전 버전 %s / 분석 대상 %d건 / 키워드 검출 %d건 / 출력 %d행 -> %s"

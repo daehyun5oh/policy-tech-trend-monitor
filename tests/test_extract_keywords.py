@@ -150,5 +150,45 @@ class DictionaryValidationTest(unittest.TestCase):
             self.load("K1,AI,AI,yes,v1\n")
 
 
+class TextDirsTest(unittest.TestCase):
+    """본문 폴더를 여러 곳에서 찾는다 (정책 수집기는 data/raw, 뉴스 수집기는 data/processed/texts)."""
+
+    def setUp(self):
+        self.dic = ek.load_dictionary(FIX / "keywords_fixture.csv")
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.a, self.b = Path(self.tmp.name) / "a", Path(self.tmp.name) / "b"
+        self.a.mkdir()
+        self.b.mkdir()
+
+    def doc(self, doc_id):
+        return {"document_id": doc_id, "title": "제목", "status": "analyzed", "analysis_scope": "title_summary"}
+
+    def test_file_is_found_in_a_later_directory(self):
+        (self.b / "X1.txt").write_text("인공지능 소식", encoding="utf-8")
+        rows, errors, _ = ek.extract_documents([self.doc("X1")], self.dic, [self.a, self.b])
+        self.assertEqual((errors, [r["keyword"] for r in rows]), ([], ["인공지능"]))
+
+    def test_first_directory_wins_when_both_have_the_file(self):
+        (self.a / "X1.txt").write_text("반도체", encoding="utf-8")
+        (self.b / "X1.txt").write_text("인공지능", encoding="utf-8")
+        rows, _, _ = ek.extract_documents([self.doc("X1")], self.dic, [self.a, self.b])
+        self.assertEqual([r["keyword"] for r in rows], ["반도체"])
+
+    def test_missing_everywhere_is_reported(self):
+        rows, errors, _ = ek.extract_documents([self.doc("X1")], self.dic, [self.a, self.b])
+        self.assertEqual(rows, [])
+        self.assertIn("본문 파일을 읽을 수 없음", errors[0])
+
+    def test_no_directories_is_reported(self):
+        _, errors, _ = ek.extract_documents([self.doc("X1")], self.dic, [])
+        self.assertIn("본문 폴더가 없음", errors[0])
+
+    def test_single_directory_argument_still_works(self):
+        (self.a / "X1.txt").write_text("인공지능", encoding="utf-8")
+        rows, errors, _ = ek.extract_documents([self.doc("X1")], self.dic, self.a)
+        self.assertEqual((errors, len(rows)), ([], 1))
+
+
 if __name__ == "__main__":
     unittest.main()

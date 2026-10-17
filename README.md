@@ -48,10 +48,11 @@ python dashboard/app.py --dir tests/fixtures --stats tests/fixtures/expected/key
 
 ```bash
 python src/collect_news.py rss --from 2026-10-01 --to 2026-10-31
-python src/extract_keywords.py --text-dir data/processed/texts
+python src/extract_keywords.py
 python src/validate_csv.py --documents data/processed/documents.csv --keywords data/processed/document_keywords.csv --sources config/sources.csv
 ```
 
+- 추출기는 본문 파일(`<document_id>.txt`)을 `data/raw`(정책 수집기)와 `data/processed/texts`(뉴스 수집기)에서 차례로 찾는다. 다른 폴더는 `--text-dir`을 여러 번 줘서 지정한다.
 - 특정 출처만: `--sources news-002,news-004` (수집기), 누적 없이 이번 결과만: `--no-accumulate`.
 - 한 출처가 실패해도 나머지는 수집하고, 실패한 출처는 종료 코드 1과 `data/processed/collect_log.json` 의 사유(`fetch_error`, `parse_error`)로 알린다.
 - 마지막 명령은 뉴스와 정책의 수집 기간이 같은지도 경고한다. 기준은 [docs/period_policy.md](docs/period_policy.md).
