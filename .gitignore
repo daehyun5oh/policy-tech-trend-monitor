@@ -1,0 +1,47 @@
+# 기획안 §11(접근권한·저작권·API 키 관리)에 따른 추적 제외 목록
+
+# ── 비밀값 ──
+# API 키·토큰이 들어가는 실제 환경변수 파일
+.env
+.env.local
+.env.*.local
+# 변수명과 빈 예시값만 담은 파일은 공유한다
+!.env.example
+# 키·인증서 파일
+*.key
+*.pem
+credentials.json
+token.json
+
+# ── 로컬 원문과 실행 결과 ──
+# 수집한 원문. 재배포가 제한될 수 있어 로컬에만 둔다
+data/raw/
+# 실행마다 생성되는 결과 CSV
+data/processed/
+# 배포 가능한 고정 샘플은 추적한다 (data/sample/ 은 제외하지 않음)
+
+# ── 실행 기록·로그 ──
+logs/
+*.log
+# 수집 실패·제외 기록 중 민감한 요청 정보가 남을 수 있는 파일
+run_logs/
+
+# ── 보고서 ──
+# 실행마다 생성되는 보고서. 검증한 예시만 reports/examples/ 에 추적한다
+reports/weekly/
+reports/monthly/
+
+# ── 런타임 산출물 ──
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+.ipynb_checkpoints/
+
+# ── 편집기·운영체제 ──
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,12 @@
+document_id,source_type,source_name,source_document_id,title,original_url,published_date,collected_at,analysis_scope,content_hash,status,exclusion_reason,duplicate_of
+F001,news,fixture-news,N-001,인공지능 반도체 투자 확대,https://example.test/news/1,2026-09-24,2026-10-12T09:00:00+09:00,title,h001,analyzed,,
+F002,news,fixture-news,N-002,"AI와 AI 규제, 인공지능 기본법 논의",https://example.test/news/2,2026-09-27,2026-10-12T09:00:00+09:00,title,h002,analyzed,,
+F003,policy,fixture-policy,P-001,생성형 AI 활용 가이드라인과 AI 윤리 원칙 발표,https://example.test/policy/1,2026-09-28,2026-10-12T09:00:00+09:00,title,h003,analyzed,,
+F004,policy,fixture-policy,P-002,클라우드 전환과 cloud 보안 점검,https://example.test/policy/2,2026-09-30,2026-10-12T09:00:00+09:00,title,h004,analyzed,,
+F005,news,fixture-news,N-003,양자 컴퓨팅과 양자컴퓨팅 동향,https://example.test/news/3,2026-10-01,2026-10-12T09:00:00+09:00,title,h005,analyzed,,
+F006,news,fixture-news,N-004,MAIL 서버 이전 소식 it 업계,https://example.test/news/4,2026-10-01,2026-10-12T09:00:00+09:00,title,h006,analyzed,,
+F007,news,fixture-news,N-005,양자 컴퓨팅과 양자컴퓨팅 동향,https://example.test/news/5,2026-10-02,2026-10-12T09:00:00+09:00,title,h005,excluded,duplicate,F005
+F008,policy,fixture-policy,P-003,IT 인프라 반도체 지원,https://example.test/policy/3,2026-10-05,2026-10-12T09:00:00+09:00,title,h008,analyzed,,
+F009,policy,fixture-policy,P-004,인공지능 정책 초안,https://example.test/policy/4,,2026-10-12T09:00:00+09:00,title,h009,excluded,no_published_date,
+F010,news,fixture-news,N-006,산업 동향 브리핑,https://example.test/news/6,2026-09-24,2026-10-12T09:00:00+09:00,title_summary,h010,analyzed,,
+F011,policy,fixture-policy,P-005,,https://example.test/policy/5,,2026-10-12T09:00:00+09:00,,,failed,fetch_error,
