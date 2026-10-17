@@ -1,5 +1,17 @@
-source_id,source_type,source_name,organization,country,access_method,list_url,access_check_status,access_check_date,redistribution,collect_from,collect_to,owner,note
-policy-001,policy,과학기술정보통신부 보도자료,과학기술정보통신부,KR,,,unverified,,unknown,,,B,후보. 접근 방식(RSS·API·목록 페이지)과 이용 조건 확인 필요
-policy-002,policy,정책브리핑 정책뉴스,문화체육관광부 국민소통실,KR,,,unverified,,unknown,,,B,후보. korea.kr 정책뉴스. 저작권 표시 조건 확인 필요
-policy-003,policy,KISTEP 발간물,한국과학기술기획평가원,KR,,,unverified,,unknown,,,B,후보. 발간물 PDF 중심이라 텍스트 추출 가능 여부 확인 필요
-news-001,news,,,,,,unverified,,unknown,,,A,A가 1주차에 확정
+source_id,source_type,source_name,organization,country,language,access_method,list_url,access_check_status,access_check_date,redistribution,collect_from,collect_to,owner,note
+policy-kr-001,policy,과기정통부 보도자료,과학기술정보통신부,KR,ko,rss,https://www.msit.go.kr/user/rss/rss.do?bbsSeqNo=94,access_ok,2026-10-17,kogl_per_item,,,B,"공식 RSS. 1회 50건. pubDate가 2026.10.15 형식이라 변환 필요. 본문에 HWP 메타데이터 JSON 혼입. 목록에 담당자 이름·연락처 노출되므로 수집 제외"
+policy-kr-002,policy,과기정통부 과학기술정책,과학기술정보통신부,KR,ko,rss,https://www.msit.go.kr/user/rss/rss.do?bbsSeqNo=70,access_ok,2026-10-17,kogl_per_item,,,B,"보도자료와 같은 RSS 체계. 정책 문서 성격이 더 강함"
+policy-kr-003,policy,과기정통부 주간동향·간행물,과학기술정보통신부,KR,ko,rss,https://www.msit.go.kr/user/rss/rss.do?bbsSeqNo=81,access_ok,2026-10-17,kogl_per_item,,,B,"동향 정리물. 중복 가능성 있어 다른 피드와 겹침 확인 필요"
+policy-kr-004,policy,정책브리핑 정책뉴스,문화체육관광부 국민소통실,KR,ko,,,unverified,,unknown,,,B,"korea.kr. 접근 방식과 공공누리 유형 확인 중단됨"
+policy-kr-005,policy,KISTEP 발간물,한국과학기술기획평가원,KR,ko,,,unverified,,unknown,,,B,"PDF 중심. 텍스트 추출 가능 여부 확인 필요"
+policy-us-001,policy,백악관 OSTP 뉴스,White House Office of Science and Technology Policy,US,en,html_list,https://www.whitehouse.gov/ostp/news/,access_ok,2026-09-19,us_gov_public_domain_check,,,B,"연방정부 저작물은 대체로 퍼블릭 도메인이나 건별 확인 필요. 대문이 아니라 news 경로여야 새 글이 쌓임"
+policy-us-002,policy,NSF News,U.S. National Science Foundation,US,en,html_list,https://www.nsf.gov/news,access_ok,2026-09-19,us_gov_public_domain_check,,,B,"보도자료와 팟캐스트가 섞여 있어 선별 필요"
+policy-us-003,policy,DOE Newsroom,U.S. Department of Energy,US,en,html_list,https://www.energy.gov/newsroom,access_ok,2026-09-19,us_gov_public_domain_check,,,B,"전력망·석탄 등 에너지 행정 소식 비중이 높아 선별 필요"
+policy-us-004,policy,NIST News,National Institute of Standards and Technology,US,en,,,unverified,,unknown,,,B,"표준 동향 확인용 후보. 주소와 접근 방식 확인 필요"
+policy-us-005,policy,Federal Register,U.S. Government Publishing Office,US,en,,,unverified,,unknown,,,B,"규제·입법 신호용 후보. 공개 API 제공 여부 확인 필요"
+policy-cn-001,policy,국무원 정책 영문판,State Council of the PRC,CN,en,html_list,https://english.www.gov.cn/policies/latestreleases/,access_ok,2026-10-17,unknown,,,B,"중국 측 최신 정책이 가장 안정적으로 올라오는 영문 경로. 2026-10-09자 신질생산력 지침 등 확인. 이용 조건 미확인"
+policy-cn-002,policy,중국과학원 뉴스 영문판,Chinese Academy of Sciences,CN,en,html_list,https://english.cas.cn/newsroom/news-updates/,access_ok,2026-10-17,unknown,,,B,"headlines·research-news 등 하위 분류가 따로 있음. 연구 성과 비중이 높아 정책 신호는 선별 필요"
+policy-cn-003,policy,과학기술부 영문 Press Room,Ministry of Science and Technology of the PRC,CN,en,html_list,https://en.most.gov.cn/,access_ok_stale,2026-10-17,unknown,,,B,"갱신이 느림. Press Room 최신이 2026-02, 사진뉴스는 2023년. 보조 출처로만 쓰고 주력은 국무원 영문판 권장"
+policy-cn-004,policy,과학기술부 중문,Ministry of Science and Technology of the PRC,CN,zh,,,unverified,,unknown,,,B,"중문 원문. 영문판 갱신 지체를 메우려면 필요하나 중국어 처리 방식 확정이 선행 조건"
+policy-cn-005,policy,국가발전개혁위원회,National Development and Reform Commission,CN,zh,,,unverified,,unknown,,,B,"5년 계획·산업정책 신호용 후보. 주소와 영문판 유무 확인 필요"
+news-001,news,,,,,,,unverified,,unknown,,,A,"A가 1주차에 확정"
