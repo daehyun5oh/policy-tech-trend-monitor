@@ -1,0 +1,8 @@
+document_id,source_type,source_name,source_document_id,title,original_url,published_date,collected_at,analysis_scope,content_hash,status,exclusion_reason,duplicate_of
+policy-0001,policy,시험정책,nttSeqNo=1,정책 문서 하나,https://p.go.kr/v?nttSeqNo=1,2026-10-05,2026-10-17T14:00:00+09:00,title_body,1111111111111111111111111111111111111111111111111111111111111111,analyzed,,
+policy-0002,policy,시험정책,nttSeqNo=2,정책 문서 둘,https://p.go.kr/v?nttSeqNo=2,2026-10-06,2026-10-17T14:00:00+09:00,title_body,2222222222222222222222222222222222222222222222222222222222222222,analyzed,,
+policy-0003,policy,시험정책,nttSeqNo=3,정책 문서 셋,https://p.go.kr/v?nttSeqNo=3,2026-10-12,2026-10-17T14:00:00+09:00,title_body,3333333333333333333333333333333333333333333333333333333333333333,analyzed,,
+news-0001,news,시험뉴스,newsId=1,뉴스 하나,https://n.kr/v?newsId=1,2026-10-05,2026-10-17T14:00:00+09:00,title_body,4444444444444444444444444444444444444444444444444444444444444444,analyzed,,
+news-0002,news,시험뉴스,newsId=2,뉴스 둘,https://n.kr/v?newsId=2,2026-10-07,2026-10-17T14:00:00+09:00,title,5555555555555555555555555555555555555555555555555555555555555555,analyzed,,
+policy-0009,policy,시험정책,nttSeqNo=9,기간 밖 문서,https://p.go.kr/v?nttSeqNo=9,2026-01-02,2026-10-17T14:00:00+09:00,title_body,9999999999999999999999999999999999999999999999999999999999999999,excluded,out_of_period,
+policy-0010,policy,시험정책,nttSeqNo=10,발행일 없는 문서,https://p.go.kr/v?nttSeqNo=10,,2026-10-17T14:00:00+09:00,title,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,excluded,no_published_date,
