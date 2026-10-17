@@ -36,7 +36,7 @@ python dashboard/app.py --dir tests/fixtures --stats tests/fixtures/expected/key
 
 ## 3. 실제 자료 실행
 
-긱뉴스가 공개한 Atom 피드를 **1회만** 요청한다(재시도 없음). 피드는 최신 약 50건만 준다.
+`config/sources.csv` 에서 상태가 `terms_ok` 인 뉴스 RSS 출처(긱뉴스, 전자신문 AI·SW, ZDNet Korea, 보안뉴스 IT·과학)의 공개 피드를 **출처마다 1회만** 요청한다(재시도 없음). 피드는 최근 15~50건만 준다.
 
 ```bash
 python src/collect_news.py rss --from 2026-10-01 --to 2026-10-31
@@ -44,7 +44,7 @@ python src/extract_keywords.py --text-dir data/processed/texts
 python src/validate_csv.py --documents data/processed/documents.csv --keywords data/processed/document_keywords.csv
 ```
 
-수집 실패 시 종료 코드 1과 함께 `data/processed/collect_log.json` 에 사유(`fetch_error`, `parse_error`)가 남는다.
+특정 출처만 수집하려면 `--sources news-002,news-004` 를 붙인다. 한 출처가 실패해도 나머지는 수집하고, 실패한 출처는 종료 코드 1과 `data/processed/collect_log.json` 의 사유(`fetch_error`, `parse_error`)로 알린다.
 정책 자료 수집과 집계 단계는 B 구현 후 추가한다.
 
 ## 4. 결과 확인

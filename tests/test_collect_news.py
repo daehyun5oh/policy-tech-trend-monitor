@@ -55,7 +55,7 @@ class CollectNewsTest(unittest.TestCase):
     def test_url_normalization_and_stable_ids(self):
         a = cn.normalize_url("HTTPS://Example.com:443/a/?utm_source=x&b=2&a=1#top")
         self.assertEqual(a, "https://example.com/a?a=1&b=2")
-        self.assertEqual(cn.make_document_id("", "https://x.test/p"), cn.make_document_id("", "https://x.test/p/"))
+        self.assertEqual(cn.make_document_id("A사", "", "https://x.test/p"), cn.make_document_id("A사", "", "https://x.test/p/"))
 
     def test_output_passes_csv_validator(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -68,6 +68,70 @@ class CollectNewsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(cn.main(["csv", str(Path(tmp) / "none.csv"), "--out-dir", tmp]), 2)
             self.assertTrue((Path(tmp) / "collect_log.json").exists())
+
+
+RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>t</title>
+<item><title><![CDATA[AI 반도체 투자]]></title><link>https://a.test/1</link>
+<pubDate>Sat, 17 Oct 2026 10:49:18 +0900</pubDate><description><![CDATA[<p>클라우드 &amp; 보안</p>]]></description></item>
+<item><title>시간대 없는 날짜</title><link>https://a.test/2</link><pubDate>2026-10-15 23:59:00</pubDate><description>요약</description></item>
+<item><title>다른 출처의 같은 주소</title><link>https://a.test/1/?utm_source=x</link><pubDate>2026-10-16 09:00:00</pubDate><description>다름</description></item>
+</channel></rss>"""
+
+
+class RssFeedTest(unittest.TestCase):
+    def test_parse_rss_items(self):
+        items = cn.parse_feed(RSS.encode("utf-8"))
+        self.assertEqual([i["url"] for i in items], ["https://a.test/1", "https://a.test/2", "https://a.test/1/?utm_source=x"])
+        self.assertEqual(items[0]["text"], "클라우드 & 보안")
+
+    def test_date_formats(self):
+        self.assertEqual(cn.parse_date("Sat, 17 Oct 2026 10:49:18 +0900").isoformat(), "2026-10-17")
+        self.assertEqual(cn.parse_date("2026-10-15 23:59:00").isoformat(), "2026-10-15")
+        # RFC 822 의 UTC 시각은 한국 표준시 날짜로 바뀐다.
+        self.assertEqual(cn.parse_date("Sat, 17 Oct 2026 20:00:00 +0000").isoformat(), "2026-10-18")
+
+    def test_duplicate_across_sources_and_same_id_in_different_sources(self):
+        a = [dict(i, source_name="A사", source_document_id="1") for i in cn.parse_feed(RSS.encode("utf-8"))[:1]]
+        b = [dict(i, source_name="B사", source_document_id="1") for i in cn.parse_feed(RSS.encode("utf-8"))[2:]]
+        rows, _ = cn.build_documents(a + b, NOW)
+        # 원문 ID가 같아도 출처가 다르면 별개지만, 정규화한 URL이 같으면 중복이다.
+        self.assertNotEqual(rows[0]["document_id"], rows[1]["document_id"])
+        self.assertEqual((rows[1]["status"], rows[1]["exclusion_reason"], rows[1]["duplicate_of"]),
+                         ("excluded", "duplicate", rows[0]["document_id"]))
+
+    def test_load_news_sources_filters_by_status_and_method(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "sources.csv"
+            lines = [
+                "source_id,source_type,source_name,access_method,list_url,access_check_status",
+                "n1,news,뉴스1,rss,https://a.test/rss,terms_ok",
+                "n2,news,뉴스2,rss,https://b.test/rss,unverified",
+                "n3,news,뉴스3,html_list,https://c.test/,terms_ok",
+                "p1,policy,정책1,rss,https://d.test/rss,terms_ok",
+            ]
+            path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            self.assertEqual([s["source_id"] for s in cn.load_news_sources(path)], ["n1"])
+            with self.assertRaises(ValueError):
+                cn.load_news_sources(path, ["n2"])
+
+    def test_one_failing_source_does_not_stop_the_others(self):
+        sources = [{"source_id": "n1", "source_name": "뉴스1", "list_url": "https://a.test/rss"},
+                   {"source_id": "n2", "source_name": "뉴스2", "list_url": "https://b.test/rss"},
+                   {"source_id": "n3", "source_name": "뉴스3", "list_url": "https://c.test/rss"}]
+
+        def fake_fetch(url):
+            if "b.test" in url:
+                raise OSError("연결 실패")
+            if "c.test" in url:
+                return b"<rss><broken"
+            return RSS.encode("utf-8")
+
+        items, log = cn.collect_rss(sources, fetch=fake_fetch, gap=0)
+        self.assertEqual([e["result"] for e in log], ["ok", "failed", "failed"])
+        self.assertEqual([e.get("failure_reason") for e in log], [None, "fetch_error", "parse_error"])
+        self.assertEqual(len(items), 3)
+        self.assertTrue(all(i["source_name"] == "뉴스1" for i in items))
 
 
 if __name__ == "__main__":
