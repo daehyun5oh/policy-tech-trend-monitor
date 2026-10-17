@@ -65,5 +65,13 @@ class FixtureConsistencyTest(unittest.TestCase):
         self.assertEqual(recomputed, expected)
 
 
+class SyntheticMarkTest(unittest.TestCase):
+    def test_fixture_folder_declares_synthetic_data(self):
+        text = (FIX / "README.md").read_text(encoding="utf-8")
+        self.assertIn("가상 데이터", text)
+        for row in read(FIX / "documents.csv"):
+            self.assertTrue(row["original_url"].startswith("https://example.test/"), row["document_id"])
+
+
 if __name__ == "__main__":
     unittest.main()
