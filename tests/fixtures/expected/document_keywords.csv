@@ -1,0 +1,12 @@
+document_id,keyword_id,keyword,matched_terms,occurrences,dictionary_version
+F001,K001,인공지능,"[""인공지능""]",1,fixture-1
+F001,K004,반도체,"[""반도체""]",1,fixture-1
+F002,K001,인공지능,"[""AI"",""인공지능""]",3,fixture-1
+F003,K001,인공지능,"[""AI""]",1,fixture-1
+F003,K002,생성형 AI,"[""생성형 AI""]",1,fixture-1
+F004,K003,클라우드,"[""클라우드"",""cloud""]",2,fixture-1
+F005,K005,양자컴퓨팅,"[""양자 컴퓨팅"",""양자컴퓨팅""]",2,fixture-1
+F008,K004,반도체,"[""반도체""]",1,fixture-1
+F008,K006,정보기술,"[""IT""]",1,fixture-1
+F010,K001,인공지능,"[""인공지능""]",1,fixture-1
+F010,K004,반도체,"[""반도체""]",2,fixture-1

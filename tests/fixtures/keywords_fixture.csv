@@ -1,0 +1,12 @@
+keyword_id,keyword,term,case_sensitive,dictionary_version
+K001,인공지능,인공지능,0,fixture-1
+K001,인공지능,AI,1,fixture-1
+K002,생성형 AI,생성형 AI,0,fixture-1
+K002,생성형 AI,생성형 인공지능,0,fixture-1
+K003,클라우드,클라우드,0,fixture-1
+K003,클라우드,cloud,0,fixture-1
+K004,반도체,반도체,0,fixture-1
+K005,양자컴퓨팅,양자컴퓨팅,0,fixture-1
+K005,양자컴퓨팅,양자 컴퓨팅,0,fixture-1
+K006,정보기술,정보기술,0,fixture-1
+K006,정보기술,IT,1,fixture-1
