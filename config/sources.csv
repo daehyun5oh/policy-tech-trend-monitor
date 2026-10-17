@@ -1,0 +1,5 @@
+source_id,source_type,source_name,organization,country,access_method,list_url,access_check_status,access_check_date,redistribution,collect_from,collect_to,owner,note
+policy-001,policy,과학기술정보통신부 보도자료,과학기술정보통신부,KR,,,unverified,,unknown,,,B,후보. 접근 방식(RSS·API·목록 페이지)과 이용 조건 확인 필요
+policy-002,policy,정책브리핑 정책뉴스,문화체육관광부 국민소통실,KR,,,unverified,,unknown,,,B,후보. korea.kr 정책뉴스. 저작권 표시 조건 확인 필요
+policy-003,policy,KISTEP 발간물,한국과학기술기획평가원,KR,,,unverified,,unknown,,,B,후보. 발간물 PDF 중심이라 텍스트 추출 가능 여부 확인 필요
+news-001,news,,,,,,unverified,,unknown,,,A,A가 1주차에 확정
