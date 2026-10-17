@@ -85,8 +85,9 @@ def test_month_bounds_calendar_month():
 
 
 def test_period_of_rejects_unknown_type():
+    """일간은 이슈 #26 요청으로 지원 대상이 됐다. 모르는 단위만 거부한다."""
     with pytest.raises(ValueError):
-        ag.period_of(date(2026, 10, 17), "daily")
+        ag.period_of(date(2026, 10, 17), "yearly")
 
 
 # ──────────────────────────── 집계 대상 ────────────────────────────

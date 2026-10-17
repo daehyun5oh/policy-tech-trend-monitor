@@ -9,8 +9,12 @@
 표준 라이브러리만 쓴다. 네트워크에 접속하지 않으므로 고정 입력으로 검증할 수
 있다 (완료기준 C4, C8).
 
+기간 단위는 일간·주간·월간이다. 기본값은 세 가지를 모두 계산한다. 일간은
+대시보드의 일간 보기에 쓴다.
+
 사용법
     python src/aggregate.py
+    python src/aggregate.py --period-type daily
     python src/aggregate.py --period-type weekly
     python src/aggregate.py --as-of 2026-10-17 --out data/processed/keyword_stats.csv
 """
@@ -41,11 +45,17 @@ STATS_FIELDS = [
 ]
 
 NOT_APPLICABLE = "해당 없음"
-PERIOD_TYPES = ("weekly", "monthly")
+# 일간은 대시보드의 일간 보기에 필요하다 (이슈 #26 요청, PR #30 코멘트)
+PERIOD_TYPES = ("daily", "weekly", "monthly")
 SOURCE_TYPES = ("news", "policy")
 
 
 # ──────────────────────────── 기간 ────────────────────────────
+
+def day_bounds(d: date) -> tuple[date, date]:
+    """일간 경계. 하루는 시작일과 종료일이 같다. 한국 표준시 기준."""
+    return d, d
+
 
 def week_bounds(d: date) -> tuple[date, date]:
     """주간 경계. 월요일 시작, 일요일 종료. 양쪽 모두 포함."""
@@ -60,6 +70,8 @@ def month_bounds(d: date) -> tuple[date, date]:
 
 
 def period_of(d: date, period_type: str) -> tuple[date, date]:
+    if period_type == "daily":
+        return day_bounds(d)
     if period_type == "weekly":
         return week_bounds(d)
     if period_type == "monthly":
