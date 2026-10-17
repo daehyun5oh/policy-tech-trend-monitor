@@ -7,7 +7,7 @@
 - `status`가 `analyzed`인 문서만 분석한다. 제외·실패 문서는 키워드를 추출하지 않는다.
 - `analysis_scope`에 따라 분석하는 텍스트가 정해진다.
   - `title`: 제목만
-  - `summary`, `body`: 제목과 `<text-dir>/<document_id>.txt`
+  - `title_summary`, `title_body`: 제목과 `<text-dir>/<document_id>.txt`
 - 제목과 본문은 따로 매칭한 뒤 합친다. 제목 끝과 본문 첫머리가 이어져 만들어지는 일치는 인정하지 않는다.
 - 본문 파일을 읽을 수 없으면 그 문서는 결과 없이 처리 실패로 보고하고, 실행은 종료 코드 2로 끝난다. 다른 문서의 결과는 그대로 기록한다.
 - `document_id`를 파일 이름으로 쓰므로, 요약·본문 범위 문서의 `document_id`는 영문·숫자로 시작하고 영문·숫자·`_`·`.`·`-`만 써야 한다. 그 밖의 값은 파일 시스템에 접근하지 않고 오류로 처리한다.
@@ -74,7 +74,7 @@
 | 항목 | 현재 값 | 정의된 곳 |
 | --- | --- | --- |
 | `status` 저장 값 | `analyzed`, `excluded`, `failed` | `src/schema.py` |
-| `analysis_scope` 저장 값 | `title`, `summary`, `body` | `src/schema.py` |
+| `analysis_scope` 저장 값 | `title`, `title_summary`, `title_body` | `src/schema.py` |
 | `period_type` 저장 값 | `weekly`, `monthly` | `src/schema.py` |
 | 동률 순위 방식 | 공동 순위 후 건너뜀 (1, 1, 3) | `src/validate_csv.py` |
 | 문서 비율 표기 | 소수 둘째 자리 | fixture, 검증기 |

@@ -3,7 +3,7 @@
 
 입력  documents.csv  (status 가 analyzed 인 문서만 분석)
       사전 CSV       (config/keywords.csv)
-      본문 폴더      (analysis_scope 가 summary/body 인 문서의 <document_id>.txt)
+      본문 폴더      (analysis_scope 가 title_summary/title_body 인 문서의 <document_id>.txt)
 출력  document_keywords.csv
 
 사용 예:
@@ -211,7 +211,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="분석 완료 문서에서 기술키워드를 추출해 document_keywords.csv를 만든다.")
     p.add_argument("--documents", default="data/processed/documents.csv")
     p.add_argument("--dictionary", default="config/keywords.csv")
-    p.add_argument("--text-dir", default=None, help="summary/body 범위 문서의 <document_id>.txt 폴더")
+    p.add_argument("--text-dir", default=None, help="title_summary/title_body 범위 문서의 <document_id>.txt 폴더")
     p.add_argument("--out", default="data/processed/document_keywords.csv")
     args = p.parse_args(argv)
 

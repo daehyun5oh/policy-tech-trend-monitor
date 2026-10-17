@@ -24,7 +24,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from schema import (DOCUMENT_COLUMNS, KEYWORD_COLUMNS, NOT_APPLICABLE, PERIOD_TYPES, SCOPES,  # noqa: E402
+from schema import (PARTIAL_VALUES, DOCUMENT_COLUMNS, KEYWORD_COLUMNS, NOT_APPLICABLE, PERIOD_TYPES, SCOPES,  # noqa: E402
                     SOURCE_TYPES, STATS_COLUMNS, STATS_SOURCE_TYPES, STATUS_ANALYZED,
                     STATUS_EXCLUDED, STATUSES)
 
@@ -191,6 +191,8 @@ def validate_stats(path, keyword_ids, report):
         start, end = parse_date(v("period_start")), parse_date(v("period_end"))
         if pt not in PERIOD_TYPES:
             report.add(name, n, "period_type은 %s 중 하나여야 함 (값: %r)" % ("/".join(PERIOD_TYPES), pt))
+        if "is_partial_period" in r and v("is_partial_period") not in PARTIAL_VALUES:
+            report.add(name, n, "is_partial_period는 %s 중 하나여야 함 (값: %r)" % ("/".join(PARTIAL_VALUES), v("is_partial_period")))
         if st not in STATS_SOURCE_TYPES:
             report.add(name, n, "source_type은 %s 중 하나여야 함 (값: %r)" % ("/".join(STATS_SOURCE_TYPES), st))
         if start is None or end is None:

@@ -97,13 +97,13 @@ class ErrorHandlingTest(unittest.TestCase):
         return base
 
     def test_missing_text_file_is_reported_and_skipped(self):
-        rows, errors, _ = ek.extract_documents([self.doc(analysis_scope="body")], self.dic, FIX / "texts")
+        rows, errors, _ = ek.extract_documents([self.doc(analysis_scope="title_body")], self.dic, FIX / "texts")
         self.assertEqual(rows, [])
         self.assertEqual(len(errors), 1)
 
     def test_unsafe_document_id_never_touches_filesystem(self):
         rows, errors, _ = ek.extract_documents(
-            [self.doc(document_id="../secret", analysis_scope="summary")], self.dic, FIX / "texts")
+            [self.doc(document_id="../secret", analysis_scope="title_summary")], self.dic, FIX / "texts")
         self.assertEqual(rows, [])
         self.assertIn("파일 이름", errors[0])
 

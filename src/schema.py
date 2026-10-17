@@ -32,10 +32,14 @@ STATUS_FAILED = "failed"
 STATUSES = (STATUS_ANALYZED, STATUS_EXCLUDED, STATUS_FAILED)
 
 # 제안: 기획안은 '제목·요약·본문 중 실제 분석 범위'라고만 적었다.
-SCOPES = ("title", "summary", "body")
+SCOPES = ("title", "title_summary", "title_body")
 
 # 제안: 기획안은 '주간·월간'만 적었고 저장 값은 정하지 않았다.
 PERIOD_TYPES = ("weekly", "monthly")
+
+# 선택 열: 있으면 yes/no여야 하며, 대시보드는 이 값을 부분 기간 판정에 우선 사용한다 (B의 data_dictionary.md §6)
+STATS_OPTIONAL_COLUMNS = ["is_partial_period"]
+PARTIAL_VALUES = ("yes", "no")
 
 # 기획안 §4: 분모가 0이면 비율·순위를 '해당 없음'으로 표시
 NOT_APPLICABLE = "해당 없음"

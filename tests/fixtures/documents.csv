@@ -8,5 +8,5 @@ F006,news,fixture-news,N-004,MAIL 서버 이전 소식 it 업계,https://example
 F007,news,fixture-news,N-005,양자 컴퓨팅과 양자컴퓨팅 동향,https://example.test/news/5,2026-10-02,2026-10-12T09:00:00+09:00,title,h005,excluded,duplicate,F005
 F008,policy,fixture-policy,P-003,IT 인프라 반도체 지원,https://example.test/policy/3,2026-10-05,2026-10-12T09:00:00+09:00,title,h008,analyzed,,
 F009,policy,fixture-policy,P-004,인공지능 정책 초안,https://example.test/policy/4,,2026-10-12T09:00:00+09:00,title,h009,excluded,no_published_date,
-F010,news,fixture-news,N-006,산업 동향 브리핑,https://example.test/news/6,2026-09-24,2026-10-12T09:00:00+09:00,summary,h010,analyzed,,
+F010,news,fixture-news,N-006,산업 동향 브리핑,https://example.test/news/6,2026-09-24,2026-10-12T09:00:00+09:00,title_summary,h010,analyzed,,
 F011,policy,fixture-policy,P-005,,https://example.test/policy/5,,2026-10-12T09:00:00+09:00,,,failed,fetch_error,

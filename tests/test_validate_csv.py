@@ -168,5 +168,23 @@ class StatsTest(ValidatorTestCase):
         self.assertReported(self.check(stats=lambda r: r.append(dict(r[0]))), "중복")
 
 
+class PartialPeriodColumnTest(unittest.TestCase):
+    def run_with(self, value):
+        fields, rows = read(SOURCES["stats"])
+        for r in rows:
+            r["is_partial_period"] = value
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "stats.csv"
+            write(path, fields + ["is_partial_period"], rows)
+            return [m for _, _, m in vc.run(stats=str(path)).errors]
+
+    def test_yes_and_no_are_accepted(self):
+        self.assertEqual(self.run_with("no"), [])
+        self.assertEqual(self.run_with("yes"), [])
+
+    def test_other_values_are_reported(self):
+        self.assertTrue(any("is_partial_period" in m for m in self.run_with("true")))
+
+
 if __name__ == "__main__":
     unittest.main()

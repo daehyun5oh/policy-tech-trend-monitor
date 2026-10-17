@@ -153,5 +153,16 @@ class CommandLineTest(unittest.TestCase):
         self.assertEqual(app.main(["--dir", str(Path(tempfile.gettempdir()) / "no-such-dir-xyz")]), 2)
 
 
+class PartialColumnTest(unittest.TestCase):
+    def test_is_partial_period_column_overrides_collection_date(self):
+        docs, stats = app.read_csv(DOCS), app.read_csv(STATS)
+        for r in stats:
+            # 같은 기간(2026-10 월간)은 수집 종료일 기준으로는 부분 기간이지만 열이 no라고 말한다.
+            r["is_partial_period"] = "no" if (r["period_type"], r["period_start"]) == ("monthly", "2026-10-01") else ""
+        m = app.build_model(docs, app.read_csv(KEYWORDS), stats, generated_at="2026-10-17T00:00:00+09:00")
+        partial = {p["start"]: p["partial"] for p in m["periods"]["monthly"]}
+        self.assertFalse(partial["2026-10-01"])
+
+
 if __name__ == "__main__":
     unittest.main()

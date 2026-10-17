@@ -8,7 +8,7 @@
 
 출력 (--out-dir, 기본 data/processed):
   documents.csv      공통 규격(src/schema.py)의 수집 문서 목록
-  texts/<id>.txt     피드가 준 요약 텍스트 (analysis_scope=summary 인 문서만, 재배포 금지라 .gitignore 대상)
+  texts/<id>.txt     피드가 준 요약 텍스트 (analysis_scope=title_summary 인 문서만, 재배포 금지라 .gitignore 대상)
   collect_log.json   성공·제외·실패 건수와 사유
 
 사용 예:
@@ -137,7 +137,7 @@ def build_documents(items, collected_at, date_from=None, date_to=None):
         title, url = item["title"], item["url"]
         published = parse_date(item["published"])
         text = item["text"]
-        scope = "summary" if text else "title"
+        scope = "title_summary" if text else "title"
         row = dict.fromkeys(DOCUMENT_COLUMNS, "")
         row.update({
             "source_type": "news", "source_name": SOURCE_NAME,
@@ -169,7 +169,7 @@ def build_documents(items, collected_at, date_from=None, date_to=None):
                 for k in keys:
                     if k[1]:
                         first_by_key[k] = row["document_id"]
-                if scope == "summary":
+                if scope == "title_summary":
                     texts[row["document_id"]] = text
         rows.append(row)
     return rows, texts

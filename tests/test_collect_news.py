@@ -45,7 +45,7 @@ class CollectNewsTest(unittest.TestCase):
         self.assertEqual(got, [("analyzed", ""), ("excluded", "duplicate"),
                                ("excluded", "out_of_period"), ("excluded", "no_published_date")])
         self.assertEqual(rows[1]["duplicate_of"], rows[0]["document_id"])
-        self.assertEqual(rows[0]["analysis_scope"], "summary")
+        self.assertEqual(rows[0]["analysis_scope"], "title_summary")
         self.assertEqual(list(texts), [rows[0]["document_id"]])
 
     def test_published_date_uses_kst(self):

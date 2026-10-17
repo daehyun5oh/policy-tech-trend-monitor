@@ -10,8 +10,8 @@ HTML 파일 하나(dashboard.html)를 만든다. 외부 글꼴·CDN을 쓰지 �
   python dashboard/app.py --dir tests/fixtures --stats tests/fixtures/expected/keyword_stats.csv \\
       --keywords tests/fixtures/expected/document_keywords.csv --out dashboard.html
 
-부분 기간 판정(제안): documents.csv의 collected_at 중 가장 늦은 날짜(수집 종료일)보다
-period_end가 뒤인 기간을 '부분 기간'으로 표시한다. keyword_stats.csv에는 부분 기간 열이 없다.
+부분 기간 판정: keyword_stats.csv에 is_partial_period 열이 있으면 그 값을 쓴다. 없으면(제안) documents.csv의 collected_at 중 가장 늦은 날짜(수집 종료일)보다
+period_end가 뒤인 기간을 '부분 기간'으로 표시한다.
 
 종료 코드: 0 정상 / 1 입력 CSV가 규격에 맞지 않음 / 2 파일을 읽을 수 없음
 """
@@ -92,7 +92,16 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
         spans["weekly"].add(tuple(x.isoformat() for x in week_of(day)))
         spans["monthly"].add(tuple(x.isoformat() for x in month_of(day)))
     latest = max(collected) if collected else ""
-    periods = {pt: [{"start": s, "end": e, "partial": bool(latest) and e > latest} for s, e in sorted(v)]
+    # 집계 CSV에 is_partial_period 열이 있으면 그 값을 쓰고, 없으면 수집 종료일로 판정한다.
+    flagged = {(cell(r, "period_type"), cell(r, "period_start")): cell(r, "is_partial_period") == "yes"
+               for r in stats_rows if cell(r, "is_partial_period")}
+
+    def is_partial(pt, s, e):
+        if (pt, s) in flagged:
+            return flagged[(pt, s)]
+        return bool(latest) and e > latest
+
+    periods = {pt: [{"start": s, "end": e, "partial": is_partial(pt, s, e)} for s, e in sorted(v)]
                for pt, v in spans.items()}
 
     by_group = defaultdict(list)
