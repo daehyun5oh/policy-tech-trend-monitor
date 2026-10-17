@@ -6,7 +6,15 @@
 
 ## 1. 설치
 
-외부 패키지가 없다. Python 3.10 이상만 있으면 된다(3.12에서 검증). [docs/environment.md](docs/environment.md) 참고.
+Python 3.10 이상이 필요하다(3.12, 3.13에서 확인). 추출·검증·대시보드·테스트와 뉴스 수집은 **외부 패키지 없이** 돈다. 정책 수집기(`collect_policy.py`)를 돌릴 때만 외부 패키지가 필요하다 ([docs/environment.md](docs/environment.md) 참고).
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate          # macOS·Linux: source .venv/bin/activate
+pip install -r requirements.txt  # 정책 수집기용. 빠른 시작에는 필요 없다
+```
+
+Windows에서 `python`이 실행되지 않으면 Microsoft Store 별칭 때문일 수 있다. 앱 실행 별칭에서 `python.exe`를 끄거나 `py` 런처를 쓴다.
 
 ```bash
 python --version
