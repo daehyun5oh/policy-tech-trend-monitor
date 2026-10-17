@@ -129,14 +129,24 @@ def find_matches(text, terms):
 
 def analyze_text(text, dictionary):
     """[(keyword_id, 출현 횟수, 실제 표기 목록)] 을 keyword_id 순으로 반환."""
-    text = normalize_text(text)
+    return analyze_segments([text], dictionary)
+
+
+def analyze_segments(segments, dictionary):
+    """텍스트 조각(제목, 요약·본문 등)을 각각 따로 매칭해 합친다.
+
+    조각 경계를 넘는 일치(제목 끝 '양자' + 본문 첫머리 '컴퓨팅')는 만들지 않는다.
+    실제 표기는 조각 순서, 조각 안에서는 등장 순서대로 중복 없이 모은다.
+    """
     found = {}
-    for start, end, kid in find_matches(text, dictionary.terms):
-        entry = found.setdefault(kid, [0, []])
-        entry[0] += 1
-        surface = text[start:end]
-        if surface not in entry[1]:
-            entry[1].append(surface)
+    for segment in segments:
+        text = normalize_text(segment)
+        for start, end, kid in find_matches(text, dictionary.terms):
+            entry = found.setdefault(kid, [0, []])
+            entry[0] += 1
+            surface = text[start:end]
+            if surface not in entry[1]:
+                entry[1].append(surface)
     return [(kid, occ, surfaces) for kid, (occ, surfaces) in sorted(found.items())]
 
 
@@ -161,7 +171,7 @@ def extract_documents(documents, dictionary, text_dir=None):
         if scope not in SCOPES:
             errors.append("%s: analysis_scope가 %s 중 하나여야 함 (값: %r)" % (where, "/".join(SCOPES), scope))
             continue
-        text = doc.get("title") or ""
+        segments = [doc.get("title") or ""]
         if scope != "title":
             if text_dir is None:
                 errors.append("%s: analysis_scope=%s 이지만 --text-dir가 지정되지 않음" % (where, scope))
@@ -171,11 +181,11 @@ def extract_documents(documents, dictionary, text_dir=None):
                 continue
             path = Path(text_dir) / (doc_id + ".txt")
             try:
-                text = text + "\n" + path.read_text(encoding="utf-8")
+                segments.append(path.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError) as e:
                 errors.append("%s: 본문 파일을 읽을 수 없음 (%s): %s" % (where, path, e))
                 continue
-        for kid, occ, surfaces in analyze_text(text, dictionary):
+        for kid, occ, surfaces in analyze_segments(segments, dictionary):
             out.append({
                 "document_id": doc_id,
                 "keyword_id": kid,

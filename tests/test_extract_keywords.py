@@ -80,6 +80,12 @@ class MatchingRuleTest(unittest.TestCase):
         result = ek.analyze_text("cloud 와 클라우드, 다시 cloud", self.dic)
         self.assertEqual(result, [("K003", 3, ["cloud", "클라우드"])])
 
+    def test_segments_are_matched_separately_and_merged(self):
+        # 제목 끝과 본문 첫머리가 이어져 '양자 컴퓨팅'이 되는 일치는 만들지 않는다.
+        self.assertEqual(ek.analyze_segments(["양자", "컴퓨팅"], self.dic), [])
+        self.assertEqual(ek.analyze_segments(["인공지능 AI", "AI와 클라우드"], self.dic),
+                         [("K001", 3, ["인공지능", "AI"]), ("K003", 1, ["클라우드"])])
+
 
 class ErrorHandlingTest(unittest.TestCase):
     def setUp(self):
@@ -122,6 +128,12 @@ class DictionaryValidationTest(unittest.TestCase):
     def test_valid_dictionary_loads(self):
         d = self.load("K1,반도체,반도체,0,v1\n")
         self.assertEqual((d.version, d.keywords), ("v1", {"K1": "반도체"}))
+
+    def test_shipped_dictionary_follows_the_rules(self):
+        d = ek.load_dictionary(ROOT / "config" / "keywords.csv")
+        self.assertTrue(d.version)
+        self.assertGreater(len(d.keywords), 0)
+        self.assertEqual(set(d.keywords), {t.keyword_id for t in d.terms})
 
     def test_rejects_missing_canonical_term(self):
         with self.assertRaises(ek.DictionaryError):

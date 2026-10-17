@@ -239,11 +239,11 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     }
     var failed = sumOver(M.overall.failed, state.type);
     if (failed > 0) {
-      box.appendChild(el('p', 'note alert', '수집 또는 분석에 실패한 ' + label + ' 문서 ' + failed + '건은 기간 집계에 포함되지 않았습니다.'));
+      box.appendChild(el('p', 'note alert', '전체 기간에서 수집 또는 분석에 실패한 ' + label + ' 문서 ' + failed + '건은 어느 기간 집계에도 포함되지 않았습니다.'));
     }
     var undated = sumOver(M.overall.excludedUndated, state.type);
     if (undated > 0) {
-      box.appendChild(el('p', 'note', '발행일을 확인할 수 없어 제외한 ' + label + ' 문서 ' + undated + '건은 기간 집계에서 빠졌습니다.'));
+      box.appendChild(el('p', 'note', '전체 기간에서 발행일을 확인할 수 없어 제외한 ' + label + ' 문서 ' + undated + '건은 어느 기간 집계에도 들어가지 않았습니다.'));
     }
   }
 
