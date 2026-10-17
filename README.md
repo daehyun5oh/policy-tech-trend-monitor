@@ -56,7 +56,7 @@ python src/validate_csv.py --documents data/processed/documents.csv --keywords d
 | `data/processed/documents.csv` | 수집 문서 1건당 1행. `status`/`exclusion_reason` 으로 분석·제외·실패 구분 |
 | `data/processed/document_keywords.csv` | 문서 × 표준 키워드 |
 | `data/processed/collect_log.json` | 수집 성공·제외·실패 건수와 사유 |
-| `data/processed/dashboard.html` | 대시보드 (집계 CSV `keyword_stats.csv` 필요) |
+| `data/processed/dashboard.html` | 대시보드 (집계 CSV `keyword_stats.csv` 필요). 키워드를 누르면 설명·분야, 출처 수·연속 기간, 근거 문서·함께 나온 키워드·출처·표기를 볼 수 있다 |
 
 필드 정의는 [docs/data_dictionary.md](docs/data_dictionary.md).
 

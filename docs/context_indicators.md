@@ -153,6 +153,8 @@
 - `local_only_no_publish` 출처는 출처 분해에서 **출처 이름은 보여 주되 제목은 숨긴다**(기존 규칙 유지).
 - 모든 지표는 **통합·뉴스·정책과 일간·주간·월간 전환에 따라** 바뀐다. 한 유형에 자료가 없는 기간은 기존처럼 안내를 표시한다.
 
+**구현 상태 (대시보드 1단계 일부)**: 키워드 순위의 한 줄을 누르면 설명·분야, 출처 수·유형 수·연속 기간 칩, 그리고 근거 문서 / 함께 나온 키워드 / 출처 / 표기 탭이 열린다. 값은 **집계 CSV가 아직 없어서 대시보드가 documents.csv와 document_keywords.csv에서 직접 계산**한다(`dashboard/app.py`의 `compute_context`, `apply_streaks`). 정의는 이 문서 §3과 같고, `tests/fixtures/context/expected/`의 손 계산 정답과 일치함을 `tests/test_dashboard.py`가 확인한다. 집계가 `keyword_context.csv` 등을 만들면 대시보드는 그 값을 읽도록 바꾼다(보고서와 같은 값을 쓰기 위해).
+
 ## 6. 2단계 이후 (이번 설계에서 제외)
 
 | 항목 | 이유 |
