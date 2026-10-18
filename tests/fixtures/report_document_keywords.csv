@@ -1,0 +1,6 @@
+document_id,keyword_id,keyword,matched_terms,occurrences,dictionary_version
+policy-0001,kw-ai,인공지능,"[""AI"",""인공지능""]",5,2026-10-17
+policy-0001,kw-quantum,양자,"[""양자""]",2,2026-10-17
+policy-0002,kw-ai,인공지능,"[""인공지능""]",3,2026-10-17
+cn-0001,kw-ai,인공지능,"[""AI""]",4,2026-10-17
+news-0001,kw-ai,인공지능,"[""AI""]",2,2026-10-17

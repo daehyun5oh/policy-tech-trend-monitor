@@ -1,0 +1,6 @@
+document_id,source_type,source_name,source_document_id,title,original_url,published_date,collected_at,analysis_scope,content_hash,status,exclusion_reason,duplicate_of
+policy-0001,policy,시험정책,nttSeqNo=1,국내 정책 문서 하나,https://p.go.kr/v?nttSeqNo=1,2026-10-05,2026-10-17T14:00:00+09:00,title_body,1111111111111111111111111111111111111111111111111111111111111111,analyzed,,
+policy-0002,policy,시험정책,nttSeqNo=2,국내 정책 문서 둘,https://p.go.kr/v?nttSeqNo=2,2026-10-06,2026-10-17T14:00:00+09:00,title_body,2222222222222222222222222222222222222222222222222222222222222222,analyzed,,
+cn-0001,policy,시험중국,contentId=9,중국 정책 문서 제목,https://cn.example/view/9,2026-10-07,2026-10-17T14:00:00+09:00,title_body,3333333333333333333333333333333333333333333333333333333333333333,analyzed,,
+news-0001,news,시험뉴스,newsId=1,국내 뉴스 하나,https://n.kr/v?newsId=1,2026-10-05,2026-10-17T14:00:00+09:00,title_body,4444444444444444444444444444444444444444444444444444444444444444,analyzed,,
+policy-0010,policy,시험정책,nttSeqNo=10,발행일 없는 문서,https://p.go.kr/v?nttSeqNo=10,,2026-10-17T14:00:00+09:00,title,5555555555555555555555555555555555555555555555555555555555555555,excluded,no_published_date,
