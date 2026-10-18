@@ -131,7 +131,12 @@ class SampleRunTest(SandboxCase):
         rows = read(self.processed / "keyword_stats.csv")
         self.assertTrue(rows)
         self.assertLessEqual({r["source_type"] for r in rows}, {"news", "policy", "all"})
-        self.assertEqual({r["period_type"] for r in rows}, {"weekly", "monthly"})
+        # 일간은 이슈 #26 요청으로 뒤에 들어왔다(PR #46). 두 상태 모두에서
+        # 통과하도록 '허용값 안에 있고 주간·월간은 반드시 있다' 로 본다
+        period_types = {r["period_type"] for r in rows}
+        self.assertLessEqual(period_types, {"daily", "weekly", "monthly"})
+        self.assertIn("weekly", period_types)
+        self.assertIn("monthly", period_types)
 
     def test_validation_passes_in_both_stages(self):
         self.assertEqual(self.stages[1].detail["validation_problems"], [])
