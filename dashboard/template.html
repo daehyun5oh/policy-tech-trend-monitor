@@ -7,103 +7,158 @@
 <style>
 :root {
   color-scheme: light dark;
-  --paper: #f3f4f0; --panel: #fbfbf8; --ink: #17212b; --muted: #596672; --rule: #d3d8d1;
-  --news: #1f4e8c; --policy: #b4690e; --all: #4b5a67; --focus: #1f4e8c;
-  --alert: #a3362b; --alert-bg: #f7e4e0; --partial-bg: #efe8d3;
+  --paper: #f9f9f7; --panel: #fcfcfb; --ink: #0b0b0b; --muted: #52514e; --faint: #898781; --rule: #e1e0d9; --axis: #c3c2b7;
+  --news: #2a78d6; --policy: #eb6834; --all: #2a78d6; --cur: #2a78d6; --base: #898781; --focus: #2a78d6;
+  --alert: #a3362b; --alert-bg: #f7e4e0; --partial-bg: #efe8d3; --track: #eceae3;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #12181d; --panel: #182027; --ink: #e7ecef; --muted: #9aa7b2; --rule: #2b3640;
-    --news: #7daef0; --policy: #e8a04c; --all: #9fb0bd; --focus: #7daef0;
-    --alert: #f0847a; --alert-bg: #3a2320; --partial-bg: #332e1c;
+  :root:not([data-theme="light"]) {
+    --paper: #0d0d0d; --panel: #1a1a19; --ink: #f0efec; --muted: #c3c2b7; --faint: #898781; --rule: #2c2c2a; --axis: #383835;
+    --news: #3987e5; --policy: #d95926; --all: #3987e5; --cur: #3987e5; --base: #898781; --focus: #3987e5;
+    --alert: #f0847a; --alert-bg: #3a2320; --partial-bg: #332e1c; --track: #262624;
   }
+}
+:root[data-theme="dark"] {
+  --paper: #0d0d0d; --panel: #1a1a19; --ink: #f0efec; --muted: #c3c2b7; --faint: #898781; --rule: #2c2c2a; --axis: #383835;
+  --news: #3987e5; --policy: #d95926; --all: #3987e5; --cur: #3987e5; --base: #898781; --focus: #3987e5;
+  --alert: #f0847a; --alert-bg: #3a2320; --partial-bg: #332e1c; --track: #262624;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body {
   margin: 0; background: var(--paper); color: var(--ink);
   font: 15px/1.65 "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
   word-break: keep-all; overflow-wrap: break-word;
 }
 button, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.masthead { max-width: 1240px; margin: 0 auto; padding: 28px 32px 4px; }
-.masthead h1 { margin: 0 0 4px; font-size: 1.55rem; font-weight: 700; letter-spacing: -0.015em; }
-.masthead p { margin: 0; max-width: 62ch; color: var(--muted); }
-.shell { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 36px; max-width: 1240px; margin: 0 auto; padding: 20px 32px 64px; }
-.rail { position: sticky; top: 16px; align-self: start; padding-right: 24px; border-right: 1px solid var(--rule); }
-.rail fieldset { margin: 0 0 18px; padding: 0; border: 0; min-width: 0; }
-.rail legend, .rail label { display: block; padding: 0; margin: 0 0 6px; font-size: 0.86rem; font-weight: 600; color: var(--muted); }
-.seg { display: flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
-.seg button { flex: 1; padding: 7px 4px; background: var(--panel); border: 0; border-right: 1px solid var(--rule); cursor: pointer; }
+.masthead { max-width: 1120px; margin: 0 auto; padding: 24px 24px 4px; }
+.masthead h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.015em; }
+.masthead p { margin: 0; max-width: 70ch; color: var(--muted); }
+.filters { position: sticky; top: 0; z-index: 5; background: var(--paper); border-bottom: 1px solid var(--rule); }
+.filters .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 20px; max-width: 1120px; margin: 0 auto; padding: 10px 24px; }
+.filters fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.filters legend, .filters label { display: block; padding: 0; margin: 0 0 3px; font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+.seg { display: flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { padding: 6px 14px; background: var(--panel); border: 0; border-right: 1px solid var(--rule); cursor: pointer; }
 .seg button:last-child { border-right: 0; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); font-weight: 600; }
-.rail select { width: 100%; padding: 8px 6px; margin-bottom: 18px; background: var(--panel); border: 1px solid var(--rule); border-radius: 3px; }
-.coverage { margin: 0; font-size: 0.84rem; color: var(--muted); }
-.covline { display: block; }
+.seg button:disabled { opacity: 0.4; cursor: default; }
+.filters select { padding: 6px 8px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
+.coverage { max-width: 1120px; margin: 0 auto; padding: 0 24px 8px; font-size: 0.8rem; color: var(--faint); }
+.covline { margin-right: 14px; }
 .nw { white-space: nowrap; }
-main { min-width: 0; }
-main h2 { margin: 0 0 6px; font-size: 1.15rem; letter-spacing: -0.01em; }
-.sum { margin: 0 0 12px; color: var(--muted); }
-.note { margin: 8px 0; padding: 8px 12px; border-left: 4px solid var(--muted); background: var(--panel); font-size: 0.93rem; }
+main { max-width: 1120px; margin: 0 auto; padding: 8px 24px 64px; min-width: 0; }
+main h2 { margin: 0 0 4px; font-size: 1.2rem; letter-spacing: -0.01em; }
+main h3 { margin: 18px 0 6px; font-size: 0.98rem; }
+.sum { margin: 0 0 10px; color: var(--muted); }
+.note { margin: 8px 0; padding: 8px 12px; border-left: 4px solid var(--faint); background: var(--panel); font-size: 0.92rem; }
 .note.partial { border-left: 4px dashed var(--policy); background: var(--partial-bg); }
 .note.alert { border-left-color: var(--alert); background: var(--alert-bg); }
 .note.scope summary { cursor: pointer; font-weight: 600; }
-.note.scope .chips { margin: 8px 0 0; }
-.block { margin-top: 28px; }
+.block { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.fine { margin: 10px 0 0; font-size: 0.84rem; color: var(--muted); max-width: 72ch; }
+.guide { margin: 14px 0 0; padding: 12px 16px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; }
+.guide h2 { font-size: 1rem; }
+.guide dl { margin: 6px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 0.9rem; }
+.guide dt { font-weight: 700; } .guide dd { margin: 0; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 14px 0; }
+.tile { padding: 12px 16px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; }
+.tile .lab { font-size: 0.82rem; color: var(--muted); }
+.tile .big { font-size: 2.2rem; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+.tile .big.txt { font-size: 1.4rem; }
+.tile .sub { font-size: 0.82rem; color: var(--muted); }
+.headline { margin: 8px 0 0; font-size: 1.02rem; max-width: 76ch; }
+.headline b { font-weight: 700; }
+/* 순위 */
 .ranks { margin: 12px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
-.rowbtn { display: grid; grid-template-columns: 3.4rem minmax(7rem, 13rem) minmax(0, 1fr); align-items: center; gap: 12px; width: 100%; padding: 9px 4px; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+.ranks:empty { display: none; }
+.rowbtn { display: grid; grid-template-columns: 2.6rem minmax(7rem, 12rem) minmax(0, 1fr); align-items: center; gap: 12px; width: 100%; padding: 7px 4px; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
 .rowbtn:hover { background: var(--panel); }
 .rowbtn[aria-expanded="true"] { background: var(--panel); box-shadow: inset 3px 0 0 var(--bar, var(--all)); }
-.ranks:empty { display: none; }
-.rk { font-weight: 700; font-size: 1.05rem; }
-.rk .tie { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); line-height: 1.1; }
+.rk { font-weight: 700; }
+.rk .tie { display: block; font-size: 0.7rem; font-weight: 400; color: var(--muted); line-height: 1.1; }
 .kw { font-weight: 600; }
 .meter { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.bar { flex: none; height: 20px; min-width: 3px; background: var(--bar, var(--all)); }
-.val { font-size: 0.86rem; color: var(--muted); white-space: nowrap; }
+.bar { flex: none; height: 14px; min-width: 3px; border-radius: 0 4px 4px 0; background: var(--bar, var(--all)); }
+.val { font-size: 0.84rem; color: var(--muted); white-space: nowrap; }
 .t-news { --bar: var(--news); } .t-policy { --bar: var(--policy); } .t-all { --bar: var(--all); }
-.evidence { padding: 8px 4px 16px calc(3.4rem + 16px); border-bottom: 1px solid var(--rule); background: var(--panel); }
+.evidence { padding: 8px 4px 16px calc(2.6rem + 16px); border-bottom: 1px solid var(--rule); background: var(--panel); }
 .docs { margin: 0; padding: 0; list-style: none; }
 .docs li { padding: 5px 0; }
 .docs a { color: var(--ink); text-decoration-color: var(--bar, var(--all)); text-underline-offset: 3px; }
 .docs .m { margin-left: 12px; font-size: 0.82rem; color: var(--muted); }
-.fine { margin: 10px 0 0; font-size: 0.84rem; color: var(--muted); max-width: 70ch; }
 .kwhead { margin: 0 0 4px; font-size: 0.93rem; max-width: 70ch; }
 .kwhead .cat { display: inline-block; margin-right: 8px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 10px; font-size: 0.78rem; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; padding: 0; list-style: none; }
 .chips li { padding: 1px 9px; border: 1px solid var(--rule); border-radius: 10px; font-size: 0.82rem; background: var(--paper); }
 .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
-.tabs button { padding: 4px 12px; background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; cursor: pointer; font-size: 0.88rem; }
+.tabs button { padding: 4px 12px; background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; cursor: pointer; font-size: 0.88rem; }
 .tabs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); font-weight: 600; }
 .pairs { margin: 0; padding: 0; list-style: none; }
 .pairs li { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; }
 .pairs .n { font-size: 0.82rem; color: var(--muted); }
 .pairs .bar2 { flex: none; height: 10px; min-width: 3px; background: var(--bar, var(--all)); }
-.scroll { overflow-x: auto; margin-top: 10px; }
-.maintabs { margin: 16px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
-.maintabs button { padding: 7px 16px; font-size: 0.95rem; }
+/* 평소와 비교: 덤벨 */
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 6px 0 4px; font-size: 0.84rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend i.b { background: var(--base); } .legend i.c { background: var(--cur); }
+.legend i.n { background: var(--news); } .legend i.p { background: var(--policy); border-radius: 2px; } .legend i.n { border-radius: 2px; }
+.dumb { margin: 0; padding: 0; list-style: none; }
+.drow { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(120px, 1fr) minmax(8rem, 15rem); align-items: center; gap: 14px; padding: 7px 0; border-bottom: 1px solid var(--rule); }
+.dname { font-weight: 600; }
+.dtrack { position: relative; height: 24px; margin: 0 8px; background: linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat; }
+.dlink { position: absolute; top: 11px; height: 2px; background: var(--axis); }
+.dot { position: absolute; top: 4px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid var(--paper); }
+.dot.b { background: var(--base); } .dot.c { background: var(--cur); }
+.dtext { font-size: 0.88rem; line-height: 1.35; }
+.dtext .dsub { display: block; font-size: 0.78rem; color: var(--muted); }
+.badge { display: inline-block; margin-left: 6px; padding: 0 7px; font-size: 0.72rem; font-weight: 600; border-radius: 9px; border: 1px solid var(--ink); }
+.badge.weak { font-weight: 400; color: var(--muted); border-color: var(--rule); }
 .tag { margin-left: 6px; padding: 0 6px; font-size: 0.72rem; font-weight: 400; border: 1px solid var(--rule); border-radius: 8px; color: var(--muted); white-space: nowrap; }
-.cols2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
-.dpos { font-weight: 700; } .dneg { font-weight: 700; color: var(--muted); }
-.catpick { margin: 8px 0 4px; }
-.catpick select { padding: 6px 8px; background: var(--panel); border: 1px solid var(--rule); border-radius: 3px; }
-@media (max-width: 860px) { .cols2 { grid-template-columns: 1fr; } }
-.trendunit { margin: 18px 0 0; font-size: 0.98rem; }
-.trendunit small { font-weight: 400; color: var(--muted); }
-table { border-collapse: collapse; min-width: 100%; font-size: 0.9rem; }
-th, td { padding: 6px 10px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
+.axisrow { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(120px, 1fr) minmax(8rem, 15rem); gap: 14px; font-size: 0.74rem; color: var(--faint); }
+.axisrow .ax { display: flex; justify-content: space-between; margin: 0 8px; }
+/* 뉴스 vs 정책: 나비 */
+.fly { margin: 0; padding: 0; list-style: none; }
+.frow { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) minmax(7rem, 11rem) minmax(0, 1fr) 3.4rem; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--rule); }
+.frow .fl { display: flex; justify-content: flex-end; } .frow .fr { display: flex; justify-content: flex-start; }
+.fbar { height: 14px; min-width: 2px; }
+.fbar.n { background: var(--news); border-radius: 4px 0 0 4px; } .fbar.p { background: var(--policy); border-radius: 0 4px 4px 0; }
+.fval { font-size: 0.8rem; color: var(--muted); }
+.fval.l { text-align: right; }
+.fname { text-align: center; font-weight: 600; font-size: 0.93rem; }
+.fname .tag { display: inline-block; }
+.fhead { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) minmax(7rem, 11rem) minmax(0, 1fr) 3.4rem; gap: 8px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.fhead .l { grid-column: 1 / 3; text-align: right; } .fhead .r { grid-column: 4 / 6; }
+.cols2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.chipbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.chipbar button { padding: 4px 12px; background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; cursor: pointer; font-size: 0.88rem; }
+.chipbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); font-weight: 600; }
+.chipbar small { color: var(--muted); margin-left: 4px; }
+.spark { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin: 10px 0; padding: 0; list-style: none; }
+.spark li { padding: 8px 12px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; }
+.spark .sk { font-weight: 600; font-size: 0.92rem; }
+.spark .sv { font-size: 0.8rem; color: var(--muted); }
+.spark svg { display: block; width: 100%; height: 34px; margin-top: 4px; overflow: visible; }
+.spark polyline { fill: none; stroke: var(--bar, var(--all)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.spark circle { fill: var(--bar, var(--all)); stroke: var(--panel); stroke-width: 2; }
+details.twin { margin: 12px 0 0; }
+details.twin summary { cursor: pointer; font-size: 0.86rem; color: var(--muted); }
+.scroll { overflow-x: auto; margin-top: 10px; }
+table { border-collapse: collapse; min-width: 100%; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 10px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
 th { font-weight: 600; color: var(--muted); }
-th:first-child, td:first-child { position: sticky; left: 0; text-align: left; background: var(--paper); color: var(--ink); font-weight: 600; }
+th:first-child, td:first-child { text-align: left; background: var(--paper); color: var(--ink); font-weight: 600; }
 td.cell { background: color-mix(in srgb, var(--bar, var(--all)) calc(var(--i, 0) * 62%), transparent); }
 .cur { box-shadow: inset 2px 0 0 var(--ink), inset -2px 0 0 var(--ink); }
 th small { display: block; font-weight: 400; font-size: 0.72rem; }
-@media (max-width: 860px) {
-  .shell { grid-template-columns: 1fr; gap: 12px; padding: 12px 16px 48px; }
-  .masthead { padding: 20px 16px 0; }
-  .rail { position: static; padding: 0 0 12px; border-right: 0; border-bottom: 1px solid var(--rule); }
-  .rowbtn { grid-template-columns: 2.8rem 1fr; }
+.dpos { font-weight: 700; } .dneg { font-weight: 700; color: var(--muted); }
+@media (max-width: 760px) {
+  .masthead, main, .coverage, .filters .row { padding-left: 16px; padding-right: 16px; }
+  .drow { grid-template-columns: 1fr; gap: 2px; }
+  .axisrow { display: none; }
+  .frow, .fhead { grid-template-columns: 2.8rem minmax(0, 1fr) minmax(5rem, 7rem) minmax(0, 1fr) 2.8rem; }
+  .rowbtn { grid-template-columns: 2.4rem 1fr; }
   .rowbtn .meter { grid-column: 2; }
   .evidence { padding-left: 16px; }
 }
@@ -113,46 +168,47 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
 <body>
 <header class="masthead">
   <h1>__TITLE__</h1>
-  <p>수집한 뉴스·정책 자료에서 기술키워드가 언급된 문서 수를 기간별로 보여 줍니다. 순위는 언급량 기준이며 기술의 중요도나 전망을 뜻하지 않습니다.</p>
+  <p>수집한 뉴스·정책 자료에서 기술키워드가 언급된 문서를 세어, 무엇이 많이 언급됐는지와 평소와 무엇이 달라졌는지를 한 화면에 보여 줍니다. 언급량일 뿐 기술의 중요도나 전망을 뜻하지 않습니다.</p>
 </header>
-<div class="shell">
-  <aside class="rail" aria-label="조회 조건">
+<div class="filters" role="search" aria-label="조회 조건">
+  <div class="row">
     <fieldset><legend>기간 단위</legend><div class="seg" id="ptSeg"></div></fieldset>
-    <label for="periodSel">기간</label>
-    <select id="periodSel"></select>
+    <div><label for="periodSel">기간</label><select id="periodSel"></select></div>
     <fieldset><legend>자료 유형</legend><div class="seg" id="typeSeg"></div></fieldset>
-    <label for="topSel">표시할 키워드 수</label>
-    <select id="topSel"></select>
-    <p class="coverage" id="coverage"></p>
-  </aside>
-  <main id="main">
-    <section id="status" aria-live="polite"></section>
-    <nav class="tabs maintabs" id="mainTabs" aria-label="화면 선택"></nav>
-    <section class="block" id="secChange" aria-labelledby="chgHead">
-      <h2 id="chgHead">평소와 비교</h2>
-      <div id="chgBox"></div>
-    </section>
-    <section class="block" id="secGap" hidden aria-labelledby="gapHead">
-      <h2 id="gapHead">뉴스와 정책 비교</h2>
-      <div id="gapBox"></div>
-    </section>
-    <section class="block" id="secCat" hidden aria-labelledby="catHead">
-      <h2 id="catHead">분야 안에서 보기</h2>
-      <div id="catBox"></div>
-    </section>
-    <section class="block" id="secRank" hidden aria-labelledby="rankHead">
-      <h2 id="rankHead">키워드 순위</h2>
-      <p class="sum" id="rankSum"></p>
-      <ol class="ranks" id="rankList"></ol>
-      <p class="fine" id="rankMsg"></p>
-    </section>
-    <section class="block" id="secTrend" hidden aria-labelledby="trendHead">
-      <h2 id="trendHead">키워드 추이</h2>
-      <p class="sum" id="trendSum"></p>
-      <div id="trendBox"></div>
-    </section>
-  </main>
+    <div><label for="topSel">순위에 보일 키워드</label><select id="topSel"></select></div>
+  </div>
 </div>
+<p class="coverage" id="coverage"></p>
+<main id="main">
+  <section id="status" aria-live="polite"></section>
+  <section class="block" id="secOverview" aria-labelledby="ovHead">
+    <h2 id="ovHead">한눈에 보기</h2>
+    <div id="ovBox"></div>
+  </section>
+  <section class="block" id="secRank" aria-labelledby="rankHead">
+    <h2 id="rankHead">많이 언급된 키워드</h2>
+    <p class="sum" id="rankSum"></p>
+    <ol class="ranks" id="rankList"></ol>
+    <p class="fine" id="rankMsg"></p>
+  </section>
+  <section class="block" id="secChange" aria-labelledby="chgHead">
+    <h2 id="chgHead">평소와 달라진 키워드</h2>
+    <div id="chgBox"></div>
+  </section>
+  <section class="block" id="secGap" aria-labelledby="gapHead">
+    <h2 id="gapHead">뉴스와 정책은 어떻게 다른가</h2>
+    <div id="gapBox"></div>
+  </section>
+  <section class="block" id="secCat" aria-labelledby="catHead">
+    <h2 id="catHead">분야 안에서 보기</h2>
+    <div id="catBox"></div>
+  </section>
+  <section class="block" id="secTrend" aria-labelledby="trendHead">
+    <h2 id="trendHead">최근 흐름</h2>
+    <p class="sum" id="trendSum"></p>
+    <div id="trendBox"></div>
+  </section>
+</main>
 <script type="application/json" id="model">__DATA__</script>
 <script>
 (function () {
@@ -162,7 +218,6 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   M.types.forEach(function (t) { TYPE_LABEL[t.id] = t.label; });
   var PT = [{ id: 'daily', label: '일간' }, { id: 'weekly', label: '주간' }, { id: 'monthly', label: '월간' }];
   var TREND_WINDOW = { daily: 14, weekly: 8, monthly: 6 };
-  var TABS = [{ id: 'change', label: '평소와 비교' }, { id: 'gap', label: '뉴스 vs 정책' }, { id: 'cat', label: '분야 안에서' }, { id: 'rank', label: '순위·추이' }];
   var DOW = ['일', '월', '화', '수', '목', '금', '토'];
   function firstUnit() { return plist('daily').length ? 'daily' : (plist('weekly').length ? 'weekly' : 'monthly'); }
   function todayKst() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
@@ -221,8 +276,7 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       if (i < 0) return;
       try { q[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* 잘못된 값은 무시 */ }
     });
-    var s = { pt: firstUnit(), type: 'all', n: 10, open: q.open || '', tab: 'change', cat: q.c || '' };
-    if (q.v && TABS.some(function (x) { return x.id === q.v; })) s.tab = q.v;
+    var s = { pt: firstUnit(), type: 'all', n: 10, open: q.open || '', cat: q.c || '' };
     if (q.pt && plist(q.pt).length) s.pt = q.pt;
     s.period = defaultPeriod(s.pt);
     if (q.p && findPeriod(s.pt, q.p)) s.period = q.p;
@@ -233,7 +287,6 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   function sync() {
     var h = '#pt=' + state.pt + '&p=' + state.period + '&t=' + state.type + '&n=' + state.n;
     if (state.open) h += '&open=' + encodeURIComponent(state.open);
-    h += '&v=' + state.tab;
     if (state.cat) h += '&c=' + encodeURIComponent(state.cat);
     try { history.replaceState(null, '', h); } catch (e) { /* file:// 등에서 막히면 주소 갱신만 생략 */ }
   }
@@ -553,48 +606,107 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     return { table: table, count: periods.length };
   }
 
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function spark(vals, w, h) {
+    var svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+    var max = 1;
+    vals.forEach(function (x) { if (x !== null && x > max) max = x; });
+    var n = vals.length, pad = 5, seg = [], last = null;
+    function pt(i, x) { return [pad + (n > 1 ? i * (w - 2 * pad) / (n - 1) : 0), h - pad - x / max * (h - 2 * pad)]; }
+    vals.forEach(function (x, i) {
+      if (x === null) { if (seg.length) { last = seg; draw(seg); seg = []; } return; }
+      seg.push(pt(i, x));
+    });
+    if (seg.length) draw(seg);
+    function draw(s) {
+      if (s.length > 1) {
+        var pl = document.createElementNS(SVGNS, 'polyline');
+        pl.setAttribute('points', s.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '));
+        pl.setAttribute('vector-effect', 'non-scaling-stroke');
+        svg.appendChild(pl);
+      }
+    }
+    // 선택한 기간(마지막 점)을 점으로 표시
+    var ci = n - 1;
+    if (vals[ci] !== null) {
+      var p = pt(ci, vals[ci]), c = document.createElementNS(SVGNS, 'circle');
+      c.setAttribute('cx', p[0].toFixed(1)); c.setAttribute('cy', p[1].toFixed(1)); c.setAttribute('r', '4');
+      svg.appendChild(c);
+    }
+    return svg;
+  }
+
   function renderTrend() {
     var box = $('trendBox'), sum = $('trendSum');
     clear(box);
     var v = M.views[vkey(state.pt, state.period, state.type)];
-    if (!v.stats.length) { sum.textContent = '표시할 키워드가 없어 추이를 그리지 않습니다.'; return; }
-    var kws = v.stats.slice(0, state.n);
-    sum.textContent = '선택한 기간의 상위 ' + kws.length + '개 키워드가 일간·주간·월간 기간마다 몇 개 문서에서 언급됐는지 보여 줍니다. 굵은 테두리는 선택한 기간입니다. ‘–’는 그 기간에 분석한 문서가 없다는 뜻입니다. 증감을 ‘급증’ 같은 말로 판정하지 않고 건수만 보여 줍니다.';
-    PT.forEach(function (o) {
-      if (!plist(o.id).length) return;
-      var res = trendTable(o.id, kws, state.period);
-      var h = el('h3', 'trendunit', o.label + ' 추이 ');
-      h.appendChild(el('small', null, '(최근 ' + res.count + '개)'));
-      box.appendChild(h);
-      var wrap = el('div', 'scroll');
-      wrap.appendChild(res.table);
-      box.appendChild(wrap);
+    if (!v.stats.length) { sum.textContent = '표시할 키워드가 없어 흐름을 그리지 않습니다.'; return; }
+    var kws = v.stats.slice(0, Math.min(state.n, 12));
+    var res = trendTable(state.pt, kws, state.period);
+    sum.textContent = '선택한 기간의 상위 ' + kws.length + '개 키워드가 최근 ' + res.count + '개 ' + UNIT_NAME[state.pt] + ' 동안 몇 개 문서에서 언급됐는지 보여 줍니다. 점은 선택한 기간이고, 선이 끊긴 곳은 그 기간에 분석한 문서가 없다는 뜻입니다. 건수의 오르내림을 판정하지 않고 보여 주기만 합니다.';
+    var all = plist(state.pt), end = all.length;
+    for (var i = 0; i < all.length; i++) { if (all[i].start === state.period) { end = i + 1; break; } }
+    var periods = all.slice(Math.max(0, end - TREND_WINDOW[state.pt]), end);
+    var ul = el('ul', 'spark t-' + state.type);
+    kws.forEach(function (k) {
+      var vals = periods.map(function (p) {
+        var pv = M.views[vkey(state.pt, p.start, state.type)];
+        return pv && pv.analyzed > 0 ? ((pv.map[k.id] || { dc: 0 }).dc) : null;
+      });
+      var li = el('li');
+      li.appendChild(el('div', 'sk', k.kw));
+      var cur = vals[vals.length - 1];
+      var known = vals.filter(function (x) { return x !== null; });
+      li.appendChild(el('div', 'sv', '선택 기간 ' + (cur === null ? '–' : cur + '건') + ' · 최근 최대 ' + Math.max.apply(null, known.concat([0])) + '건'));
+      li.appendChild(spark(vals, 160, 34));
+      li.title = periods.map(function (p, j) { return p.start + ': ' + (vals[j] === null ? '자료 없음' : vals[j] + '건'); }).join('\n');
+      ul.appendChild(li);
     });
+    box.appendChild(ul);
+    var det = el('details', 'twin');
+    det.appendChild(el('summary', null, '표로 보기'));
+    var wrap = el('div', 'scroll');
+    wrap.appendChild(res.table);
+    det.appendChild(wrap);
+    box.appendChild(det);
   }
 
   /* INSIGHT-BEGIN */
-  // 평소와 비교 · 뉴스 vs 정책 · 분야 안에서 (docs/insight_views.md). 판정어 없이 비중의 차이만 서술한다.
-  function fmtPct(x) { return (x === undefined || x === null) ? '–' : x.toFixed(2) + '%'; }
+  // 한눈에 보기 · 평소와 비교 · 뉴스 vs 정책 · 분야 안에서 (docs/insight_views.md). 판정어 없이 비중의 차이만 서술한다.
+  var UNIT_NAME = { daily: '일', weekly: '주', monthly: '개월' };
+  var CUR_NAME = { daily: '이날', weekly: '이 주', monthly: '이 달' };
+  function baseName(k) { return '직전 ' + k + UNIT_NAME[state.pt]; }
+  function fmtPct(x) { return (x === undefined || x === null) ? '–' : x.toFixed(1) + '%'; }
   function fmtSigned(x, unit) {
     if (x === null || x === undefined) return '–';
     return (x > 0 ? '+' : (x < 0 ? '−' : '')) + Math.abs(x).toFixed(2) + (unit || '');
   }
   function isBackground(id) { return (M.background[state.type] || []).indexOf(id) >= 0; }
-  function kwCell(row) {
-    var td = el('td', null, row.kw);
+  // 뚜렷함: 차이가 우연한 변동으로 보기 어렵고(|표준화 점수| 2.58 이상) 이번 건수가 5건 이상. 중요도가 아니다.
+  function isClear(r, n) { return Math.abs(r.z) >= 2.58 && n >= 5; }
+  function kwName(row) {
+    var s = el('span', 'dname', row.kw);
     if (isBackground(row.id)) {
       var tg = el('span', 'tag', '상시');
       tg.title = '선택한 자료 유형의 전체 기간 문서 40% 이상에 나오는 키워드입니다. 어디에나 깔려 있어 이 비교에서 읽을 정보가 적다는 뜻이며, 중요하지 않다는 뜻은 아닙니다.';
-      td.appendChild(tg);
+      s.appendChild(tg);
     }
     var meta = (M.meta || {})[row.id];
-    if (meta && meta.d) td.title = meta.d;
+    if (meta && meta.d) s.title = meta.d;
+    return s;
+  }
+  function kwCell(row) {
+    var td = el('td', null, row.kw);
+    if (isBackground(row.id)) td.appendChild(el('span', 'tag', '상시'));
     return td;
   }
   function makeTable(heads, rows, rowFn) {
     var wrap = el('div', 'scroll'), table = el('table', 't-' + state.type);
     var head = el('tr');
-    heads.forEach(function (h, i) { head.appendChild(el('th', null, h)); });
+    heads.forEach(function (h) { head.appendChild(el('th', null, h)); });
     var thead = el('thead'); thead.appendChild(head); table.appendChild(thead);
     var tbody = el('tbody');
     rows.forEach(function (r) {
@@ -605,6 +717,12 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     table.appendChild(tbody); wrap.appendChild(table);
     return wrap;
   }
+  function twin(table) {
+    var det = el('details', 'twin');
+    det.appendChild(el('summary', null, '표로 보기 (건수·표준화 점수 포함)'));
+    det.appendChild(table);
+    return det;
+  }
   function diffCell(d) { return el('td', d > 0 ? 'dpos' : 'dneg', fmtSigned(d, '%p')); }
   function zCell(z) {
     var td = el('td', null, fmtSigned(z));
@@ -613,11 +731,103 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   }
   function fraction(n, N, p) { return n + '/' + N + ' (' + fmtPct(p) + ')'; }
   function emptyNote(text) { return el('p', 'fine', text); }
+  function legendRow(items) {
+    var d = el('div', 'legend');
+    items.forEach(function (it) {
+      var s = el('span'); s.appendChild(el('i', it[0])); s.appendChild(document.createTextNode(it[1])); d.appendChild(s);
+    });
+    return d;
+  }
+  function niceMax(m) {
+    var steps = [1, 2, 3, 5, 8, 10, 15, 20, 30, 40, 50, 60, 80, 100];
+    for (var i = 0; i < steps.length; i++) { if (m <= steps[i]) return steps[i]; }
+    return 100;
+  }
+
+  // 평소 → 이번 덤벨 한 줄. 점 위치는 문서 중 그 키워드가 나온 비율(%)이다.
+  function dumbRow(r, c, max) {
+    var li = el('li', 'drow');
+    li.appendChild(kwName(r));
+    var track = el('span', 'dtrack');
+    var lo = Math.min(r.p0, r.p1), hi = Math.max(r.p0, r.p1);
+    var link = el('span', 'dlink');
+    link.style.left = (lo / max * 100) + '%'; link.style.width = ((hi - lo) / max * 100) + '%';
+    var d0 = el('span', 'dot b'), d1 = el('span', 'dot c');
+    d0.style.left = (r.p0 / max * 100) + '%'; d1.style.left = (r.p1 / max * 100) + '%';
+    track.appendChild(link); track.appendChild(d0); track.appendChild(d1);
+    li.appendChild(track);
+    var tx = el('span', 'dtext');
+    tx.appendChild(document.createTextNode('평소 ' + fmtPct(r.p0) + ' → ' + CUR_NAME[state.pt] + ' ' + fmtPct(r.p1)));
+    var clear_ = isClear(r, r.n1);
+    var bd = el('span', clear_ ? 'badge' : 'badge weak', clear_ ? '뚜렷함' : '참고용');
+    bd.title = clear_ ? '차이가 우연한 변동으로 보기 어렵고 이번 건수가 5건 이상입니다(중요도를 뜻하지 않습니다).' : '건수가 적거나 차이가 우연한 변동과 구별되지 않아 참고로만 보세요.';
+    tx.appendChild(bd);
+    tx.appendChild(el('span', 'dsub', CUR_NAME[state.pt] + ' ' + r.n1 + '건 · 평소 ' + r.n0 + '건'));
+    li.appendChild(tx);
+    li.setAttribute('aria-label', r.kw + ': 평소 ' + fmtPct(r.p0) + ', ' + CUR_NAME[state.pt] + ' ' + fmtPct(r.p1) + (clear_ ? ', 뚜렷함' : ', 참고용'));
+    return li;
+  }
+  function dumbbell(rows, c, max) {
+    var ul = el('ul', 'dumb');
+    var ax = el('div', 'axisrow');
+    ax.appendChild(el('span'));
+    var a = el('span', 'ax'); a.appendChild(el('span', null, '0%')); a.appendChild(el('span', null, max + '%'));
+    ax.appendChild(a); ax.appendChild(el('span'));
+    var wrap = el('div'); wrap.appendChild(ax);
+    rows.forEach(function (r) { ul.appendChild(dumbRow(r, c, max)); });
+    wrap.appendChild(ul);
+    return wrap;
+  }
+
+  function renderOverview() {
+    var box = $('ovBox'); clear(box);
+    var v = M.views[vkey(state.pt, state.period, state.type)], label = TYPE_LABEL[state.type];
+    var guide = el('div', 'guide');
+    guide.appendChild(el('h2', null, '이 화면 읽는 법'));
+    var dl = el('dl');
+    [['문서 비중', '분석한 문서 100건 중 그 키워드가 나온 문서가 몇 건인지를 %로 나타낸 값입니다.'],
+     ['평소', '선택한 기간 바로 앞의 같은 단위 기간들(일간이면 직전 7일, 주간이면 직전 4주, 월간이면 직전 3개월)의 문서 비중입니다.'],
+     ['뚜렷함 / 참고용', '평소와의 차이가 우연한 변동과 구별될 만큼 크고 건수가 5건 이상이면 ‘뚜렷함’, 아니면 ‘참고용’입니다. 중요도를 뜻하지 않습니다.']].forEach(function (x) {
+      dl.appendChild(el('dt', null, x[0])); dl.appendChild(el('dd', null, x[1]));
+    });
+    guide.appendChild(dl);
+    var tiles = el('div', 'tiles');
+    function tile(lab, big, sub, txt) {
+      var t = el('div', 'tile');
+      t.appendChild(el('div', 'lab', lab));
+      t.appendChild(el('div', txt ? 'big txt' : 'big', big));
+      if (sub) t.appendChild(el('div', 'sub', sub));
+      tiles.appendChild(t);
+    }
+    tile('분석한 ' + label + ' 문서', v.analyzed + '건', '제외한 문서 ' + v.excluded + '건');
+    var top = v.stats[0], c = v.chg;
+    tile('검출된 키워드', v.stats.length + '개', top ? '가장 많이 나온 키워드: ' + top.kw + ' (문서 ' + top.dc + '건)' : '사전에 등록된 키워드가 나오지 않았습니다');
+    var ups = (c && c.ok ? c.up : []).filter(function (r) { return isClear(r, r.n1); });
+    tile('평소보다 비중이 커진 키워드', c && c.ok ? ups.length + '개' : '비교 불가',
+      c && c.ok ? '‘뚜렷함’으로 표시된 키워드 수' : '아래 ‘평소와 달라진 키워드’에 사유를 적었습니다', !(c && c.ok));
+    box.appendChild(tiles);
+    var hl = el('p', 'headline');
+    if (!v.analyzed) {
+      hl.textContent = '이 기간에는 분석한 ' + label + ' 문서가 없습니다. 다른 기간을 고르세요.';
+    } else {
+      var names = v.stats.slice(0, 3).map(function (r) { return r.kw; });
+      var s = '이 기간 ' + label + ' 문서 ' + v.analyzed + '건에서 가장 많이 언급된 키워드는 ' + (names.length ? names.join(', ') : '없음') + '입니다.';
+      if (c && c.ok) {
+        s += ups.length ? ' 평소보다 문서 비중이 뚜렷하게 커진 키워드는 ' + ups.slice(0, 3).map(function (r) { return r.kw; }).join(', ') + (ups.length > 3 ? ' 등 ' + ups.length + '개' : '') + '입니다.'
+                        : ' 평소와 뚜렷하게 달라진 키워드는 없습니다.';
+      } else if (c) {
+        s += ' 평소와의 비교는 자료가 부족해 하지 않았습니다.';
+      }
+      hl.textContent = s;
+    }
+    box.appendChild(hl);
+    box.appendChild(guide);
+  }
 
   function renderChange() {
     var box = $('chgBox'); clear(box);
     var v = M.views[vkey(state.pt, state.period, state.type)], c = v && v.chg, label = TYPE_LABEL[state.type];
-    box.appendChild(el('p', 'sum', '선택한 기간의 키워드 문서 비중을 직전 기간들의 평균 비중과 견줍니다. 어디에나 나오는 키워드(상시)가 아니라 평소와 달라진 부분을 보려는 화면입니다.'));
+    box.appendChild(el('p', 'sum', '같은 키워드가 평소에는 문서의 몇 %에 나오다가, 선택한 기간에는 몇 %에 나왔는지 비교합니다. 어디에나 나오는 키워드(상시)가 아니라 평소와 달라진 부분을 보려는 화면입니다.'));
     if (!c) { box.appendChild(emptyNote('이 기간에는 분석한 ' + label + ' 문서가 없어 비교하지 않습니다.')); return; }
     if (!c.ok) {
       box.appendChild(el('p', 'note', c.why === 'cur'
@@ -625,88 +835,118 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
         : '직전 기간의 분석 문서가 합쳐서 ' + c.N0 + '건뿐이라 비교하지 않습니다(20건 이상 필요). 수집이 더 쌓이면 비교할 수 있습니다.'));
       return;
     }
-    box.appendChild(el('p', 'sum', label + ' 자료 · 이번 기간 ' + c.N1 + '건 ↔ 직전 ' + c.k + '개 기간(' + c.base[0] + ' ~ ' + c.base[1] + ') ' + c.N0 + '건'));
+    box.appendChild(el('p', 'sum', label + ' 자료 · ' + CUR_NAME[state.pt] + ' 문서 ' + c.N1 + '건 ↔ 평소(' + baseName(c.k) + ', ' + c.base[0] + ' ~ ' + c.base[1] + ') 문서 ' + c.N0 + '건'));
     if (c.mix && c.mix.length) {
       box.appendChild(el('p', 'note alert', '출처 구성이 달라졌습니다: ' + c.mix.map(function (m) { return m.src + ' ' + m.base + '% → ' + m.cur + '%'; }).join(', ') +
         '. 아래 변화에는 출처가 바뀐 영향이 섞여 있어 그대로 읽기 어렵습니다.'));
     }
-    var heads = ['키워드', '이번 기간', '기준 기간', '차이', '표준화 점수', '비고'];
+    var m = 1;
+    c.up.concat(c.down).forEach(function (r) { m = Math.max(m, r.p0, r.p1); });
+    var max = niceMax(m);
+    box.appendChild(legendRow([['b', '평소의 문서 비중'], ['c', CUR_NAME[state.pt] + '의 문서 비중']]));
+    box.appendChild(el('h3', null, '평소보다 많이 나온 키워드'));
+    box.appendChild(c.up.length ? dumbbell(c.up, c, max) : emptyNote('이번 기간에 2건 이상 나오고 평소보다 비중이 큰 키워드가 없습니다.'));
+    box.appendChild(el('h3', null, '평소보다 적게 나온 키워드'));
+    box.appendChild(c.down.length ? dumbbell(c.down, c, max) : emptyNote('평소 비중으로 이번 기간에 2건 이상 기대되는데 비중이 작아진 키워드가 없습니다.'));
+    var heads = ['키워드', CUR_NAME[state.pt], '평소', '차이', '표준화 점수', '구분'];
     var rowFn = function (r) {
-      return [kwCell(r), fraction(r.n1, c.N1, r.p1), fraction(r.n0, c.N0, r.p0), diffCell(r.d), zCell(r.z), r.n1 < 5 && r.n1 > 0 ? '건수 적음' : ''];
+      return [kwCell(r), fraction(r.n1, c.N1, r.p1), fraction(r.n0, c.N0, r.p0), diffCell(r.d), zCell(r.z), isClear(r, r.n1) ? '뚜렷함' : '참고용'];
     };
-    box.appendChild(el('h3', 'trendunit', '비중이 커진 키워드'));
-    box.appendChild(c.up.length ? makeTable(heads, c.up, rowFn) : emptyNote('이번 기간에 2건 이상 나오고 기준보다 비중이 큰 키워드가 없습니다.'));
-    box.appendChild(el('h3', 'trendunit', '비중이 작아진 키워드'));
-    box.appendChild(c.down.length ? makeTable(heads, c.down, rowFn) : emptyNote('기준 비중으로 이번 기간에 2건 이상 기대되는데 비중이 작아진 키워드가 없습니다.'));
-    box.appendChild(el('p', 'fine', '비중은 「그 키워드가 나온 문서 수 ÷ 분석 문서 수」입니다. 표준화 점수는 우연한 변동에 견준 차이일 뿐 유의성이나 중요도를 주장하지 않으며, 같은 사건을 다룬 기사가 여러 곳에 실리면 한 사건이 여러 번 셈됩니다. 사전 표기 일치 방식의 오추출도 섞여 있습니다.'));
+    box.appendChild(twin(makeTable(heads, c.up.concat(c.down), rowFn)));
+    box.appendChild(el('p', 'fine', '같은 사건을 다룬 기사가 여러 곳에 실리면 한 사건이 여러 번 셈되고, 사전 표기 일치 방식의 오추출도 섞여 있습니다.'));
   }
 
+  // 나비 한 줄: 왼쪽 뉴스, 오른쪽 정책. 막대 길이는 문서 비중(%)이며 양쪽이 같은 눈금이다.
+  function flyRow(r, g, max) {
+    var li = el('li', 'frow');
+    var lv = el('span', 'fval l', fmtPct(r.pn)), rv = el('span', 'fval', fmtPct(r.pp));
+    var lb = el('span', 'fbar n'), rb = el('span', 'fbar p');
+    lb.style.width = (r.pn / max * 100) + '%'; rb.style.width = (r.pp / max * 100) + '%';
+    var l = el('span', 'fl'), rr = el('span', 'fr');
+    l.appendChild(lb); rr.appendChild(rb);
+    var nm = el('span', 'fname', r.kw);
+    var tag = r.tag === 'only_news' ? '뉴스에만' : (r.tag === 'only_policy' ? '정책에만' : '');
+    if (tag) nm.appendChild(el('span', 'tag', tag));
+    if (isBackground(r.id)) nm.appendChild(el('span', 'tag', '상시'));
+    li.title = r.kw + ' — 뉴스 ' + r.nn + '/' + g.Nn + '건, 정책 ' + r.np + '/' + g.Np + '건';
+    li.appendChild(lv); li.appendChild(l); li.appendChild(nm); li.appendChild(rr); li.appendChild(rv);
+    return li;
+  }
   function renderGap() {
     var box = $('gapBox'); clear(box);
     var v = M.views[vkey(state.pt, state.period, 'all')], g = v && v.gap;
-    box.appendChild(el('p', 'sum', '같은 기간에 뉴스와 정책에서 각 키워드가 나온 문서의 비중을 나란히 봅니다. 자료 유형 선택과 관계없이 이 기간의 뉴스와 정책을 비교합니다.'));
+    box.appendChild(el('p', 'sum', '같은 기간에 뉴스와 정책에서 각 키워드가 나온 문서의 비중을 나란히 봅니다(자료 유형 선택과 관계없이 뉴스와 정책을 모두 비교합니다).'));
     if (!g || !g.ok) {
       var nn = g ? g.Nn : 0, np = g ? g.Np : 0;
       box.appendChild(el('p', 'note', '이 기간에는 뉴스 ' + nn + '건, 정책 ' + np + '건입니다. 두 유형 모두 5건 이상이어야 비교합니다.' +
         (M.commonRange ? ' 두 유형의 자료가 모두 있는 범위는 ' + M.commonRange[0] + ' ~ ' + M.commonRange[1] + '입니다.' : ' 두 유형의 자료가 모두 있는 범위가 아직 없습니다.')));
       return;
     }
-    box.appendChild(el('p', 'sum', '뉴스 ' + g.Nn + '건 ↔ 정책 ' + g.Np + '건'));
+    box.appendChild(el('p', 'sum', '뉴스 문서 ' + g.Nn + '건 ↔ 정책 문서 ' + g.Np + '건'));
+    var m = 1;
+    g.news.concat(g.policy).forEach(function (r) { m = Math.max(m, r.pn, r.pp); });
+    var max = niceMax(m);
+    box.appendChild(legendRow([['n', '뉴스에서의 문서 비중(왼쪽)'], ['p', '정책에서의 문서 비중(오른쪽)']]));
+    [['뉴스에서 더 많이 나온 키워드', g.news], ['정책에서 더 많이 나온 키워드', g.policy]].forEach(function (grp) {
+      box.appendChild(el('h3', null, grp[0]));
+      if (!grp[1].length) { box.appendChild(emptyNote('해당하는 키워드가 없습니다.')); return; }
+      var ul = el('ul', 'fly');
+      grp[1].forEach(function (r) { ul.appendChild(flyRow(r, g, max)); });
+      box.appendChild(ul);
+    });
     var heads = ['키워드', '뉴스', '정책', '차이(뉴스−정책)', '표준화 점수', '비고'];
-    var rowFn = function (r) {
+    box.appendChild(twin(makeTable(heads, g.news.concat(g.policy), function (r) {
       var tag = r.tag === 'only_news' ? '뉴스에만' : (r.tag === 'only_policy' ? '정책에만' : '');
       return [kwCell(r), fraction(r.nn, g.Nn, r.pn), fraction(r.np, g.Np, r.pp), diffCell(r.d), zCell(r.z), tag];
-    };
-    var cols = el('div', 'cols2'), l = el('div'), r = el('div');
-    l.appendChild(el('h3', 'trendunit', '뉴스에서 비중이 더 큰 키워드'));
-    l.appendChild(g.news.length ? makeTable(heads, g.news, rowFn) : emptyNote('해당하는 키워드가 없습니다.'));
-    r.appendChild(el('h3', 'trendunit', '정책에서 비중이 더 큰 키워드'));
-    r.appendChild(g.policy.length ? makeTable(heads, g.policy, rowFn) : emptyNote('해당하는 키워드가 없습니다.'));
-    cols.appendChild(l); cols.appendChild(r); box.appendChild(cols);
-    box.appendChild(el('p', 'fine', '비중의 차이는 두 자료 유형의 성격(뉴스는 동향 보도, 정책은 부처 발표)과 출처 선정의 영향을 함께 받습니다. 키워드 첫 등장 시점으로 선후 관계를 보는 분석은 수집 기간이 충분히 쌓인 뒤에 넣습니다.'));
+    })));
+    box.appendChild(el('p', 'fine', '비중의 차이는 두 자료 유형의 성격(뉴스는 동향 보도, 정책은 부처 발표)과 출처 선정의 영향을 함께 받습니다.'));
   }
 
   function renderCat() {
     var box = $('catBox'); clear(box);
     var v = M.views[vkey(state.pt, state.period, state.type)], cv = (v && v.catv) || {};
     var cats = (M.categories || []).filter(function (c) { return cv[c]; });
-    box.appendChild(el('p', 'sum', '큰 주제 안에서 무엇이 달라지는지 봅니다. 분야를 고르면 그 분야 키워드가 하나라도 나온 문서들 안에서 키워드별 비중을 보여 줍니다.'));
+    box.appendChild(el('p', 'sum', '큰 주제(분야) 안에서 어떤 키워드가 나오는지 봅니다. 분야를 고르면 그 분야 키워드가 하나라도 나온 문서들 안에서의 문서 비중을 보여 줍니다.'));
     if (!cats.length) { box.appendChild(emptyNote('이 기간·자료 유형에는 분야가 확인되는 문서가 없습니다.')); return; }
     if (cats.indexOf(state.cat) < 0) state.cat = cats[0];
-    var pick = el('div', 'catpick'), sel = el('select');
-    sel.setAttribute('aria-label', '분야');
+    var bar = el('div', 'chipbar');
     cats.forEach(function (c) {
-      var o = el('option', null, c + ' (' + cv[c].N + '건)'); o.value = c; o.selected = c === state.cat; sel.appendChild(o);
+      var b = el('button', null, c); b.type = 'button';
+      b.appendChild(el('small', null, cv[c].N + '건'));
+      b.setAttribute('aria-pressed', String(c === state.cat));
+      b.addEventListener('click', function () { state.cat = c; update(); });
+      bar.appendChild(b);
     });
-    sel.addEventListener('change', function (e) { state.cat = e.target.value; update(); });
-    pick.appendChild(sel); box.appendChild(pick);
+    box.appendChild(bar);
     var d = cv[state.cat];
     box.appendChild(el('p', 'sum', '「' + state.cat + '」 분야 키워드가 나온 문서 ' + d.N + '건 안에서의 비중' +
-      (d.cmp ? ' · 직전 기간들의 같은 분야 문서 ' + d.N0 + '건과 비교' : '')));
+      (d.cmp ? ' · 평소(직전 기간들)의 같은 분야 문서 ' + d.N0 + '건과 비교' : '')));
     if (!d.cmp) {
-      box.appendChild(el('p', 'note', '분야 문서가 적어(이번 기간 ' + d.N + '건, 기준 기간 ' + d.N0 + '건; 각각 5건·15건 이상 필요) 비중만 보여 줍니다.'));
-      box.appendChild(makeTable(['키워드', '분야 문서 중'], d.rows, function (r) { return [kwCell(r), fraction(r.n1, d.N, r.p1)]; }));
+      box.appendChild(el('p', 'note', '분야 문서가 적어(이번 기간 ' + d.N + '건, 평소 ' + d.N0 + '건; 각각 5건·15건 이상 필요) 평소와 비교하지 않고 비중만 보여 줍니다.'));
+      var m1 = 1;
+      d.rows.forEach(function (r) { m1 = Math.max(m1, r.p1); });
+      var ul = el('ul', 'pairs t-' + state.type);
+      d.rows.forEach(function (r) {
+        var li = el('li');
+        li.appendChild(el('span', 'dname', r.kw));
+        var b2 = el('span', 'bar2'); b2.style.width = (r.p1 / m1 * 160) + 'px';
+        li.appendChild(b2);
+        li.appendChild(el('span', 'n', fmtPct(r.p1) + ' (' + r.n1 + '/' + d.N + '건)'));
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+      box.appendChild(twin(makeTable(['키워드', '분야 문서 중'], d.rows, function (r) { return [kwCell(r), fraction(r.n1, d.N, r.p1)]; })));
     } else {
-      box.appendChild(makeTable(['키워드', '이번 기간', '기준 기간', '차이', '표준화 점수'], d.rows, function (r) {
+      var m = 1;
+      d.rows.forEach(function (r) { m = Math.max(m, r.p0, r.p1); });
+      var cc = { N1: d.N, N0: d.N0 };
+      box.appendChild(legendRow([['b', '평소의 분야 내 비중'], ['c', CUR_NAME[state.pt] + '의 분야 내 비중']]));
+      box.appendChild(dumbbell(d.rows, cc, niceMax(m)));
+      box.appendChild(twin(makeTable(['키워드', CUR_NAME[state.pt], '평소', '차이', '표준화 점수'], d.rows, function (r) {
         return [kwCell(r), fraction(r.n1, d.N, r.p1), fraction(r.n0, d.N0, r.p0), diffCell(r.d), zCell(r.z)];
-      }));
+      })));
     }
     box.appendChild(el('p', 'fine', '한 문서에 같은 분야 키워드가 여러 개 있으면 각각 셉니다. 분야 분류는 `config/keyword_meta.csv`의 초안입니다.'));
-  }
-
-  function renderMainTabs() {
-    var nav = $('mainTabs'); clear(nav);
-    TABS.forEach(function (t) {
-      var b = el('button', null, t.label);
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String(state.tab === t.id));
-      b.addEventListener('click', function () { state.tab = t.id; update(); });
-      nav.appendChild(b);
-    });
-    var show = { change: 'secChange', gap: 'secGap', cat: 'secCat', rank: 'secRank' };
-    ['secChange', 'secGap', 'secCat', 'secRank', 'secTrend'].forEach(function (id) { $(id).hidden = true; });
-    $(show[state.tab]).hidden = false;
-    if (state.tab === 'rank') $('secTrend').hidden = false;
   }
   /* INSIGHT-END */
 
@@ -715,7 +955,7 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       $('status').appendChild(el('p', 'note alert', '기간 집계에 쓸 수 있는 분석 문서가 없습니다. documents.csv의 status, published_date를 확인하세요.'));
       return;
     }
-    renderControls(); renderStatus(); renderMainTabs(); renderChange(); renderGap(); renderCat(); renderRanks(); renderTrend();
+    renderControls(); renderStatus(); renderOverview(); renderRanks(); renderChange(); renderGap(); renderCat(); renderTrend();
   }
   function update() { render(); sync(); }
 
