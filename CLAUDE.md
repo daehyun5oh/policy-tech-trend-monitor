@@ -64,4 +64,5 @@ python src/validate_csv.py --documents data/processed/documents.csv --keywords d
 - 부분 기간은 수집 종료일이 기간 안에 있거나 기간이 그 뒤까지 이어질 때다. 키워드 없는 분석 문서도 비율의 분모에 포함한다.
 - 통합(`all`) 문서 빈도는 뉴스·정책을 더하지 않고 문서 ID의 합집합으로 센다.
 - 뉴스 피드는 최근 기사만 주므로 `collect_news.py rss`는 `data/raw/news_items.csv`에 누적한다. `documents.csv`의 뉴스가 아닌 행은 지우지 않는다.
+- 대시보드의 키워드 상세 패널과 인사이트 화면(평소와 비교·뉴스 vs 정책·분야 안에서)의 지표는 집계가 아직 만들지 않아 **대시보드가 계산한다**(규칙 8의 현재 예외, `docs/context_indicators.md`, `docs/insight_views.md`). 순위·문서 빈도·비율은 집계 CSV 그대로다. 화면 문구에 "급증", "유망" 같은 판정어를 쓰지 않는다(`tests/test_insight_views.py`가 검사).
 - 키워드가 없다는 이유로 문서를 제외하지 않는다. 비ICT 제외는 별도 규칙이다(`docs/topic_filter_rules.md`, 설계 단계).

@@ -82,6 +82,14 @@ main h2 { margin: 0 0 6px; font-size: 1.15rem; letter-spacing: -0.01em; }
 .pairs .n { font-size: 0.82rem; color: var(--muted); }
 .pairs .bar2 { flex: none; height: 10px; min-width: 3px; background: var(--bar, var(--all)); }
 .scroll { overflow-x: auto; margin-top: 10px; }
+.maintabs { margin: 16px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.maintabs button { padding: 7px 16px; font-size: 0.95rem; }
+.tag { margin-left: 6px; padding: 0 6px; font-size: 0.72rem; font-weight: 400; border: 1px solid var(--rule); border-radius: 8px; color: var(--muted); white-space: nowrap; }
+.cols2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.dpos { font-weight: 700; } .dneg { font-weight: 700; color: var(--muted); }
+.catpick { margin: 8px 0 4px; }
+.catpick select { padding: 6px 8px; background: var(--panel); border: 1px solid var(--rule); border-radius: 3px; }
+@media (max-width: 860px) { .cols2 { grid-template-columns: 1fr; } }
 .trendunit { margin: 18px 0 0; font-size: 0.98rem; }
 .trendunit small { font-weight: 400; color: var(--muted); }
 table { border-collapse: collapse; min-width: 100%; font-size: 0.9rem; }
@@ -119,13 +127,26 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   </aside>
   <main id="main">
     <section id="status" aria-live="polite"></section>
-    <section class="block" aria-labelledby="rankHead">
+    <nav class="tabs maintabs" id="mainTabs" aria-label="화면 선택"></nav>
+    <section class="block" id="secChange" aria-labelledby="chgHead">
+      <h2 id="chgHead">평소와 비교</h2>
+      <div id="chgBox"></div>
+    </section>
+    <section class="block" id="secGap" hidden aria-labelledby="gapHead">
+      <h2 id="gapHead">뉴스와 정책 비교</h2>
+      <div id="gapBox"></div>
+    </section>
+    <section class="block" id="secCat" hidden aria-labelledby="catHead">
+      <h2 id="catHead">분야 안에서 보기</h2>
+      <div id="catBox"></div>
+    </section>
+    <section class="block" id="secRank" hidden aria-labelledby="rankHead">
       <h2 id="rankHead">키워드 순위</h2>
       <p class="sum" id="rankSum"></p>
       <ol class="ranks" id="rankList"></ol>
       <p class="fine" id="rankMsg"></p>
     </section>
-    <section class="block" aria-labelledby="trendHead">
+    <section class="block" id="secTrend" hidden aria-labelledby="trendHead">
       <h2 id="trendHead">키워드 추이</h2>
       <p class="sum" id="trendSum"></p>
       <div id="trendBox"></div>
@@ -141,6 +162,7 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   M.types.forEach(function (t) { TYPE_LABEL[t.id] = t.label; });
   var PT = [{ id: 'daily', label: '일간' }, { id: 'weekly', label: '주간' }, { id: 'monthly', label: '월간' }];
   var TREND_WINDOW = { daily: 14, weekly: 8, monthly: 6 };
+  var TABS = [{ id: 'change', label: '평소와 비교' }, { id: 'gap', label: '뉴스 vs 정책' }, { id: 'cat', label: '분야 안에서' }, { id: 'rank', label: '순위·추이' }];
   var DOW = ['일', '월', '화', '수', '목', '금', '토'];
   function firstUnit() { return plist('daily').length ? 'daily' : (plist('weekly').length ? 'weekly' : 'monthly'); }
   function todayKst() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
@@ -199,7 +221,8 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       if (i < 0) return;
       try { q[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* 잘못된 값은 무시 */ }
     });
-    var s = { pt: firstUnit(), type: 'all', n: 10, open: q.open || '' };
+    var s = { pt: firstUnit(), type: 'all', n: 10, open: q.open || '', tab: 'change', cat: q.c || '' };
+    if (q.v && TABS.some(function (x) { return x.id === q.v; })) s.tab = q.v;
     if (q.pt && plist(q.pt).length) s.pt = q.pt;
     s.period = defaultPeriod(s.pt);
     if (q.p && findPeriod(s.pt, q.p)) s.period = q.p;
@@ -210,6 +233,8 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   function sync() {
     var h = '#pt=' + state.pt + '&p=' + state.period + '&t=' + state.type + '&n=' + state.n;
     if (state.open) h += '&open=' + encodeURIComponent(state.open);
+    h += '&v=' + state.tab;
+    if (state.cat) h += '&c=' + encodeURIComponent(state.cat);
     try { history.replaceState(null, '', h); } catch (e) { /* file:// 등에서 막히면 주소 갱신만 생략 */ }
   }
 
@@ -547,12 +572,150 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     });
   }
 
+  /* INSIGHT-BEGIN */
+  // 평소와 비교 · 뉴스 vs 정책 · 분야 안에서 (docs/insight_views.md). 판정어 없이 비중의 차이만 서술한다.
+  function fmtPct(x) { return (x === undefined || x === null) ? '–' : x.toFixed(2) + '%'; }
+  function fmtSigned(x, unit) {
+    if (x === null || x === undefined) return '–';
+    return (x > 0 ? '+' : (x < 0 ? '−' : '')) + Math.abs(x).toFixed(2) + (unit || '');
+  }
+  function isBackground(id) { return (M.background[state.type] || []).indexOf(id) >= 0; }
+  function kwCell(row) {
+    var td = el('td', null, row.kw);
+    if (isBackground(row.id)) {
+      var tg = el('span', 'tag', '상시');
+      tg.title = '선택한 자료 유형의 전체 기간 문서 40% 이상에 나오는 키워드입니다. 어디에나 깔려 있어 이 비교에서 읽을 정보가 적다는 뜻이며, 중요하지 않다는 뜻은 아닙니다.';
+      td.appendChild(tg);
+    }
+    var meta = (M.meta || {})[row.id];
+    if (meta && meta.d) td.title = meta.d;
+    return td;
+  }
+  function makeTable(heads, rows, rowFn) {
+    var wrap = el('div', 'scroll'), table = el('table', 't-' + state.type);
+    var head = el('tr');
+    heads.forEach(function (h, i) { head.appendChild(el('th', null, h)); });
+    var thead = el('thead'); thead.appendChild(head); table.appendChild(thead);
+    var tbody = el('tbody');
+    rows.forEach(function (r) {
+      var tr = el('tr');
+      rowFn(r).forEach(function (c) { tr.appendChild(typeof c === 'string' ? el('td', null, c) : c); });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody); wrap.appendChild(table);
+    return wrap;
+  }
+  function diffCell(d) { return el('td', d > 0 ? 'dpos' : 'dneg', fmtSigned(d, '%p')); }
+  function zCell(z) {
+    var td = el('td', null, fmtSigned(z));
+    td.title = '표준화 점수: 두 비중의 차이를 우연한 변동의 크기로 나눈 값입니다. 절댓값이 클수록 우연으로 보기 어렵지만 중요도나 유의성을 뜻하지 않으며, 출처 구성의 변화는 걸러 내지 못합니다.';
+    return td;
+  }
+  function fraction(n, N, p) { return n + '/' + N + ' (' + fmtPct(p) + ')'; }
+  function emptyNote(text) { return el('p', 'fine', text); }
+
+  function renderChange() {
+    var box = $('chgBox'); clear(box);
+    var v = M.views[vkey(state.pt, state.period, state.type)], c = v && v.chg, label = TYPE_LABEL[state.type];
+    box.appendChild(el('p', 'sum', '선택한 기간의 키워드 문서 비중을 직전 기간들의 평균 비중과 견줍니다. 어디에나 나오는 키워드(상시)가 아니라 평소와 달라진 부분을 보려는 화면입니다.'));
+    if (!c) { box.appendChild(emptyNote('이 기간에는 분석한 ' + label + ' 문서가 없어 비교하지 않습니다.')); return; }
+    if (!c.ok) {
+      box.appendChild(el('p', 'note', c.why === 'cur'
+        ? '이번 기간 분석 문서가 ' + c.N1 + '건뿐이라 비교하지 않습니다(5건 이상 필요).'
+        : '직전 기간의 분석 문서가 합쳐서 ' + c.N0 + '건뿐이라 비교하지 않습니다(20건 이상 필요). 수집이 더 쌓이면 비교할 수 있습니다.'));
+      return;
+    }
+    box.appendChild(el('p', 'sum', label + ' 자료 · 이번 기간 ' + c.N1 + '건 ↔ 직전 ' + c.k + '개 기간(' + c.base[0] + ' ~ ' + c.base[1] + ') ' + c.N0 + '건'));
+    if (c.mix && c.mix.length) {
+      box.appendChild(el('p', 'note alert', '출처 구성이 달라졌습니다: ' + c.mix.map(function (m) { return m.src + ' ' + m.base + '% → ' + m.cur + '%'; }).join(', ') +
+        '. 아래 변화에는 출처가 바뀐 영향이 섞여 있어 그대로 읽기 어렵습니다.'));
+    }
+    var heads = ['키워드', '이번 기간', '기준 기간', '차이', '표준화 점수', '비고'];
+    var rowFn = function (r) {
+      return [kwCell(r), fraction(r.n1, c.N1, r.p1), fraction(r.n0, c.N0, r.p0), diffCell(r.d), zCell(r.z), r.n1 < 5 && r.n1 > 0 ? '건수 적음' : ''];
+    };
+    box.appendChild(el('h3', 'trendunit', '비중이 커진 키워드'));
+    box.appendChild(c.up.length ? makeTable(heads, c.up, rowFn) : emptyNote('이번 기간에 2건 이상 나오고 기준보다 비중이 큰 키워드가 없습니다.'));
+    box.appendChild(el('h3', 'trendunit', '비중이 작아진 키워드'));
+    box.appendChild(c.down.length ? makeTable(heads, c.down, rowFn) : emptyNote('기준 비중으로 이번 기간에 2건 이상 기대되는데 비중이 작아진 키워드가 없습니다.'));
+    box.appendChild(el('p', 'fine', '비중은 「그 키워드가 나온 문서 수 ÷ 분석 문서 수」입니다. 표준화 점수는 우연한 변동에 견준 차이일 뿐 유의성이나 중요도를 주장하지 않으며, 같은 사건을 다룬 기사가 여러 곳에 실리면 한 사건이 여러 번 셈됩니다. 사전 표기 일치 방식의 오추출도 섞여 있습니다.'));
+  }
+
+  function renderGap() {
+    var box = $('gapBox'); clear(box);
+    var v = M.views[vkey(state.pt, state.period, 'all')], g = v && v.gap;
+    box.appendChild(el('p', 'sum', '같은 기간에 뉴스와 정책에서 각 키워드가 나온 문서의 비중을 나란히 봅니다. 자료 유형 선택과 관계없이 이 기간의 뉴스와 정책을 비교합니다.'));
+    if (!g || !g.ok) {
+      var nn = g ? g.Nn : 0, np = g ? g.Np : 0;
+      box.appendChild(el('p', 'note', '이 기간에는 뉴스 ' + nn + '건, 정책 ' + np + '건입니다. 두 유형 모두 5건 이상이어야 비교합니다.' +
+        (M.commonRange ? ' 두 유형의 자료가 모두 있는 범위는 ' + M.commonRange[0] + ' ~ ' + M.commonRange[1] + '입니다.' : ' 두 유형의 자료가 모두 있는 범위가 아직 없습니다.')));
+      return;
+    }
+    box.appendChild(el('p', 'sum', '뉴스 ' + g.Nn + '건 ↔ 정책 ' + g.Np + '건'));
+    var heads = ['키워드', '뉴스', '정책', '차이(뉴스−정책)', '표준화 점수', '비고'];
+    var rowFn = function (r) {
+      var tag = r.tag === 'only_news' ? '뉴스에만' : (r.tag === 'only_policy' ? '정책에만' : '');
+      return [kwCell(r), fraction(r.nn, g.Nn, r.pn), fraction(r.np, g.Np, r.pp), diffCell(r.d), zCell(r.z), tag];
+    };
+    var cols = el('div', 'cols2'), l = el('div'), r = el('div');
+    l.appendChild(el('h3', 'trendunit', '뉴스에서 비중이 더 큰 키워드'));
+    l.appendChild(g.news.length ? makeTable(heads, g.news, rowFn) : emptyNote('해당하는 키워드가 없습니다.'));
+    r.appendChild(el('h3', 'trendunit', '정책에서 비중이 더 큰 키워드'));
+    r.appendChild(g.policy.length ? makeTable(heads, g.policy, rowFn) : emptyNote('해당하는 키워드가 없습니다.'));
+    cols.appendChild(l); cols.appendChild(r); box.appendChild(cols);
+    box.appendChild(el('p', 'fine', '비중의 차이는 두 자료 유형의 성격(뉴스는 동향 보도, 정책은 부처 발표)과 출처 선정의 영향을 함께 받습니다. 키워드 첫 등장 시점으로 선후 관계를 보는 분석은 수집 기간이 충분히 쌓인 뒤에 넣습니다.'));
+  }
+
+  function renderCat() {
+    var box = $('catBox'); clear(box);
+    var v = M.views[vkey(state.pt, state.period, state.type)], cv = (v && v.catv) || {};
+    var cats = (M.categories || []).filter(function (c) { return cv[c]; });
+    box.appendChild(el('p', 'sum', '큰 주제 안에서 무엇이 달라지는지 봅니다. 분야를 고르면 그 분야 키워드가 하나라도 나온 문서들 안에서 키워드별 비중을 보여 줍니다.'));
+    if (!cats.length) { box.appendChild(emptyNote('이 기간·자료 유형에는 분야가 확인되는 문서가 없습니다.')); return; }
+    if (cats.indexOf(state.cat) < 0) state.cat = cats[0];
+    var pick = el('div', 'catpick'), sel = el('select');
+    sel.setAttribute('aria-label', '분야');
+    cats.forEach(function (c) {
+      var o = el('option', null, c + ' (' + cv[c].N + '건)'); o.value = c; o.selected = c === state.cat; sel.appendChild(o);
+    });
+    sel.addEventListener('change', function (e) { state.cat = e.target.value; update(); });
+    pick.appendChild(sel); box.appendChild(pick);
+    var d = cv[state.cat];
+    box.appendChild(el('p', 'sum', '「' + state.cat + '」 분야 키워드가 나온 문서 ' + d.N + '건 안에서의 비중' +
+      (d.cmp ? ' · 직전 기간들의 같은 분야 문서 ' + d.N0 + '건과 비교' : '')));
+    if (!d.cmp) {
+      box.appendChild(el('p', 'note', '분야 문서가 적어(이번 기간 ' + d.N + '건, 기준 기간 ' + d.N0 + '건; 각각 5건·15건 이상 필요) 비중만 보여 줍니다.'));
+      box.appendChild(makeTable(['키워드', '분야 문서 중'], d.rows, function (r) { return [kwCell(r), fraction(r.n1, d.N, r.p1)]; }));
+    } else {
+      box.appendChild(makeTable(['키워드', '이번 기간', '기준 기간', '차이', '표준화 점수'], d.rows, function (r) {
+        return [kwCell(r), fraction(r.n1, d.N, r.p1), fraction(r.n0, d.N0, r.p0), diffCell(r.d), zCell(r.z)];
+      }));
+    }
+    box.appendChild(el('p', 'fine', '한 문서에 같은 분야 키워드가 여러 개 있으면 각각 셉니다. 분야 분류는 `config/keyword_meta.csv`의 초안입니다.'));
+  }
+
+  function renderMainTabs() {
+    var nav = $('mainTabs'); clear(nav);
+    TABS.forEach(function (t) {
+      var b = el('button', null, t.label);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(state.tab === t.id));
+      b.addEventListener('click', function () { state.tab = t.id; update(); });
+      nav.appendChild(b);
+    });
+    var show = { change: 'secChange', gap: 'secGap', cat: 'secCat', rank: 'secRank' };
+    ['secChange', 'secGap', 'secCat', 'secRank', 'secTrend'].forEach(function (id) { $(id).hidden = true; });
+    $(show[state.tab]).hidden = false;
+    if (state.tab === 'rank') $('secTrend').hidden = false;
+  }
+  /* INSIGHT-END */
+
   function render() {
     if (!state.period) {
       $('status').appendChild(el('p', 'note alert', '기간 집계에 쓸 수 있는 분석 문서가 없습니다. documents.csv의 status, published_date를 확인하세요.'));
       return;
     }
-    renderControls(); renderStatus(); renderRanks(); renderTrend();
+    renderControls(); renderStatus(); renderMainTabs(); renderChange(); renderGap(); renderCat(); renderRanks(); renderTrend();
   }
   function update() { render(); sync(); }
 
