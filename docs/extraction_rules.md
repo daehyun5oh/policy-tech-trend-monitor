@@ -57,7 +57,7 @@
 
 | 항목 | 정의 |
 | --- | --- |
-| 기간 | 주간은 월요일~일요일, 월간은 달력 월. 한국 표준시, 시작일·종료일 포함. 기준은 `published_date`이고 날짜만 있는 자료에 시각을 붙이지 않는다 |
+| 기간 | 일간은 하루, 주간은 월요일~일요일, 월간은 달력 월. 한국 표준시, 시작일·종료일 포함. 기준은 `published_date`이고 날짜만 있는 자료에 시각을 붙이지 않는다 |
 | 분모 | 해당 기간·유형에서 `status=analyzed`이고 발행일이 있는 모든 문서. 키워드가 하나도 없는 문서도 포함한다. 중복 제외·날짜 없음·실패 문서는 제외한다 |
 | 문서 빈도 | 키워드를 포함한 분모 문서 수. 한 문서에서 여러 번 나와도 1건 |
 | 출현 횟수 | 그 문서들의 `occurrences` 합 |
@@ -65,23 +65,23 @@
 | 순위 | 문서 빈도 내림차순. 동률은 공동 순위이고 다음 순위는 건너뛴다 (1, 1, 3). 같은 순위 안의 표시 순서는 키워드 이름의 문자열 순서다 |
 | 분모 0 | 비율과 순위를 `해당 없음`으로 표시한다 |
 | 통합(`all`) | 문서는 `source_type`을 하나만 가지므로 통합 분모는 뉴스 분모와 정책 분모의 합이고, 키워드별 통합 문서 빈도는 `max(뉴스, 정책)` 이상 `뉴스+정책` 이하다. 검증기가 이 관계를 검사한다 |
-| 부분 기간 | `documents.csv`의 `collected_at` 중 가장 늦은 날짜(수집 종료일)보다 `period_end`가 뒤인 기간. `keyword_stats.csv`에 해당 열이 없어 대시보드가 판정한다 |
+| 부분 기간 | 수집 종료일(집계 실행일)이 기간 안에 있거나 기간이 그 뒤까지 이어지는 기간. 집계가 `keyword_stats.csv`의 `is_partial_period`(`yes`/`no`)에 기록하고, 대시보드는 그 열이 있으면 그 값을 쓴다. 열이 없을 때만 `documents.csv`의 `collected_at` 최댓값으로 직접 판정한다 |
 
-## 6. B와 확정할 항목
+## 6. A·B가 확정한 항목
 
-기획안에 값이 정해져 있지 않아 A가 임시로 정한 것이다.
+기획안에 값이 정해져 있지 않아 처음에는 A가 임시로 정했고, B의 데이터 사전(`docs/data_dictionary.md`)과 B의 집계 구현을 거쳐 아래와 같이 맞췄다.
 
-| 항목 | 현재 값 | 정의된 곳 |
-| --- | --- | --- |
-| `status` 저장 값 | `analyzed`, `excluded`, `failed` | `src/schema.py` |
-| `analysis_scope` 저장 값 | `title`, `title_summary`, `title_body` | `src/schema.py` |
-| `period_type` 저장 값 | `weekly`, `monthly` | `src/schema.py` |
-| 동률 순위 방식 | 공동 순위 후 건너뜀 (1, 1, 3) | `src/validate_csv.py` |
-| 문서 비율 표기 | 소수 둘째 자리 | fixture, 검증기 |
-| 요약·본문 텍스트 전달 | `<text-dir>/<document_id>.txt` (`documents.csv`에는 본문 열이 없다) | `src/extract_keywords.py` |
-| `keyword_stats.csv` 행 | 문서 빈도 1 이상인 키워드만 행을 둔다. 분모 0 기간은 행이 없어도 되고, 있다면 `해당 없음` 표기 | fixture, 검증기 |
-| 부분 기간 판정 | 수집 종료일(`collected_at` 최댓값) 기준 | `dashboard/app.py` |
-| `exclusion_reason` 값 | 검증기는 제외 문서에 값이 비어 있지 않은지만 본다 | `src/validate_csv.py` |
+| 항목 | 확정 값 | 정의된 곳 | 결과 |
+| --- | --- | --- | --- |
+| `status` 저장 값 | `analyzed`, `excluded`, `failed` | `src/schema.py`, 데이터 사전 | 같음 |
+| `analysis_scope` 저장 값 | `title`, `title_summary`, `title_body` | `src/schema.py` | **B의 데이터 사전을 따라 A의 값(`summary`, `body`)을 바꿈** |
+| `period_type` 저장 값 | `daily`, `weekly`, `monthly` | `src/schema.py` | 일간 추가(대시보드 요청). B 집계가 같은 값을 만듦(PR #46, 머지 전) |
+| 동률 순위 방식 | 공동 순위 후 건너뜀 (1, 1, 3) | `src/validate_csv.py`, B의 `aggregate.py` | 같은 규칙(B는 "경쟁 순위 1, 2, 2, 4"로 표현). 같은 fixture에서 값이 모두 일치 |
+| 문서 비율 표기 | 소수 둘째 자리 | fixture, 검증기, B의 집계 | 같음 |
+| 요약·본문 텍스트 전달 | `<document_id>.txt`. 폴더는 정책 `data/raw`, 뉴스 `data/processed/texts` (추출기가 차례로 찾음) | `src/extract_keywords.py` | 정책 수집기의 폴더에 맞춤(PR #39) |
+| `keyword_stats.csv` 행 | 문서 빈도 1 이상인 키워드만 행을 둔다. 분모 0 기간은 행을 만들지 않고 실행 기록에만 문서 수를 남긴다 | fixture, 검증기, B의 집계 | 같음 |
+| 부분 기간 판정 | 수집 종료일이 기간 안이거나 기간이 그 뒤까지 이어질 때. 열 `is_partial_period`가 있으면 그 값 우선 | B의 집계, `dashboard/app.py` | **B가 열을 만들고 대시보드가 그것을 읽도록 맞춤** |
+| `exclusion_reason` 값 | 데이터 사전 §3의 허용값. 검증기는 제외·실패 문서에 값이 비어 있지 않은지만 본다 | 데이터 사전, `src/validate_csv.py` | 허용값 검사는 후속 과제 |
 
 ## 7. 알려진 한계
 
@@ -100,4 +100,4 @@
 | 집계 기대값 | `tests/fixtures/expected/` | `tests/test_fixture_consistency.py` |
 | 화면 표시, 부분 기간, 근거 조회 | `dashboard/app.py`, `dashboard/template.html` | `tests/test_dashboard.py` |
 
-집계 코드(B의 `aggregate.py`)는 아직 없다. 구현되면 `tests/fixtures/expected/keyword_stats.csv`와 정확히 일치해야 한다 (C4).
+집계 코드(B의 `aggregate.py`, PR #42·#46, 머지 전)는 `tests/fixtures/expected/keyword_stats.csv`의 A 손 계산 정답과 일치한다. A가 주간 16행, 월간 15행에서, B가 일간 18행에서 확인했다 (C4). 맥락·확산 지표(`docs/context_indicators.md`)는 아직 집계에 없다.
