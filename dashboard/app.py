@@ -24,6 +24,7 @@ import re
 import sys
 import webbrowser
 from collections import defaultdict
+from math import sqrt
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -127,6 +128,19 @@ def compute_context(members, kids_by_doc, names, terms_by_doc):
     return out
 
 
+# ---- 인사이트 화면(docs/insight_views.md) 계산 ----------------------------------------
+BASELINE_K = {"daily": 7, "weekly": 4, "monthly": 3}  # 기준 기간 개수(이전의 분석 문서가 있는 기간)
+MIN_CUR_DOCS = 5        # 이번 기간 문서가 이보다 적으면 비교하지 않는다
+MIN_BASE_DOCS = 20      # 기준 기간 문서 합이 이보다 적으면 비교하지 않는다
+MIN_COUNT = 2           # 비중이 커진 키워드로 올리려면 이번 기간 문서가 이 이상
+MIN_TYPE_DOCS = 5       # 뉴스·정책 비교는 두 유형 모두 이 이상일 때만
+MIN_CAT_CUR = 5         # 분야 안 비교: 이번 기간 분야 문서
+MIN_CAT_BASE = 15       # 분야 안 비교: 기준 기간 분야 문서 합
+BACKGROUND_SHARE = 0.4  # 전체 기간 문서의 이 비율 이상에 나오면 「상시」
+BACKGROUND_MIN_DOCS = 20
+MIX_WARN_PP = 15.0      # 출처별 문서 비중이 이만큼(%p) 달라지면 출처 구성 경고
+TOP_N = 10
+
 SCOPE_ORDER = ("title", "title_summary", "title_body")
 
 
@@ -139,6 +153,151 @@ def scope_by_source(members):
         if scope in SCOPE_ORDER:
             counts[cell(r, "source_name")][scope] += 1
     return [[name] + [c[s] for s in SCOPE_ORDER] for name, c in sorted(counts.items())]
+
+
+def compare_counts(n1, N1, n0, N0):
+    """두 비율(n1/N1, n0/N0)의 차이와 표준화 점수(두 비율 차이 검정 통계량)를 돌려준다.
+
+    p = (n1+n0)/(N1+N0) 일 때 z = (p1-p0) / sqrt(p(1-p)(1/N1+1/N0)). p가 0 또는 1이면 z는 None.
+    비중·차이는 %로, 소수 둘째 자리까지. 우연한 변동에 견준 차이일 뿐 유의성이나 중요도의 주장이 아니다."""
+    p1, p0 = n1 / N1, n0 / N0
+    pool = (n1 + n0) / (N1 + N0)
+    se = sqrt(pool * (1 - pool) * (1 / N1 + 1 / N0)) if 0 < pool < 1 else 0
+    z = (p1 - p0) / se if se else None
+    return {"p1": round(p1 * 100, 2), "p0": round(p0 * 100, 2), "d": round((p1 - p0) * 100, 2),
+            "z": None if z is None else round(z, 2)}
+
+
+def category_counts(members, kids_by_doc, kid_cat):
+    """분야 안 비교용: {분야: {"N": 그 분야 키워드를 하나라도 가진 문서 수, "k": {keyword_id: 문서 수}}}."""
+    out = {}
+    for r in members:
+        kids = kids_by_doc.get(cell(r, "document_id"), ())
+        for cat in {kid_cat[k] for k in kids if k in kid_cat}:
+            entry = out.setdefault(cat, {"N": 0, "k": defaultdict(int)})
+            entry["N"] += 1
+            for k in kids:
+                if kid_cat.get(k) == cat:
+                    entry["k"][k] += 1
+    return {c: {"N": e["N"], "k": dict(e["k"])} for c, e in out.items()}
+
+
+def _prior_nonempty(views, pt, tid, starts, idx, k):
+    out = []
+    for j in range(idx - 1, -1, -1):
+        if views["%s|%s|%s" % (pt, starts[j], tid)]["analyzed"] > 0:
+            out.append(starts[j])
+            if len(out) == k:
+                break
+    return list(reversed(out))
+
+
+def _source_mix(views, pt, tid, starts):
+    mix = defaultdict(int)
+    for s in starts:
+        for row in views["%s|%s|%s" % (pt, s, tid)].get("scope", []):
+            mix[row[0]] += sum(row[1:])
+    return mix
+
+
+def build_changes(views, periods, names):
+    """기간마다 기준 기간과 비교한 키워드 비중 변화(`chg`)와 분야 안 비중(`catv`)을 채운다 (docs/insight_views.md §3, §5, §7)."""
+    for pt, plist in periods.items():
+        starts = sorted(p["start"] for p in plist)
+        for tid, _ in TYPES:
+            for idx, start in enumerate(starts):
+                v = views["%s|%s|%s" % (pt, start, tid)]
+                if v["analyzed"] == 0:
+                    continue
+                base = _prior_nonempty(views, pt, tid, starts, idx, BASELINE_K[pt])
+                bviews = [views["%s|%s|%s" % (pt, s, tid)] for s in base]
+                N1, N0 = v["analyzed"], sum(b["analyzed"] for b in bviews)
+                info = {"N1": N1, "N0": N0, "k": len(base), "base": [base[0], base[-1]] if base else []}
+                if N1 < MIN_CUR_DOCS:
+                    v["chg"] = dict(info, ok=False, why="cur")
+                elif N0 < MIN_BASE_DOCS:
+                    v["chg"] = dict(info, ok=False, why="base")
+                else:
+                    cur = {s["id"]: s["dc"] for s in v["stats"]}
+                    n0s = defaultdict(int)
+                    label = {s["id"]: s["kw"] for s in v["stats"]}
+                    for b in bviews:
+                        for s in b["stats"]:
+                            n0s[s["id"]] += s["dc"]
+                            label.setdefault(s["id"], s["kw"])
+                    rows = []
+                    for kid in set(cur) | set(n0s):
+                        n1, n0 = cur.get(kid, 0), n0s.get(kid, 0)
+                        row = {"id": kid, "kw": label[kid], "n1": n1, "n0": n0}
+                        row.update(compare_counts(n1, N1, n0, N0))
+                        rows.append(row)
+                    key = lambda r: (r["z"] is None, -(r["z"] or 0), r["kw"])  # noqa: E731
+                    up = sorted((r for r in rows if r["n1"] >= MIN_COUNT and r["d"] > 0 and r["z"] is not None), key=key)[:TOP_N]
+                    down = sorted((r for r in rows if r["d"] < 0 and r["z"] is not None and r["n0"] / N0 * N1 >= MIN_COUNT),
+                                  key=lambda r: (r["z"], r["kw"]))[:TOP_N]
+                    cur_mix, base_mix = _source_mix(views, pt, tid, [start]), _source_mix(views, pt, tid, base)
+                    warn = []
+                    for src in sorted(set(cur_mix) | set(base_mix)):
+                        a = cur_mix.get(src, 0) / (sum(cur_mix.values()) or 1) * 100
+                        b = base_mix.get(src, 0) / (sum(base_mix.values()) or 1) * 100
+                        if abs(a - b) >= MIX_WARN_PP:
+                            warn.append({"src": src, "cur": round(a, 1), "base": round(b, 1)})
+                    v["chg"] = dict(info, ok=True, up=up, down=down, mix=warn)
+                # 분야 안 비중 (기준 기간과의 비교는 분야 문서가 충분할 때만)
+                catv = {}
+                for cat, cur in v.get("cat", {}).items():
+                    Nc0 = sum(b.get("cat", {}).get(cat, {}).get("N", 0) for b in bviews)
+                    can = cur["N"] >= MIN_CAT_CUR and Nc0 >= MIN_CAT_BASE
+                    rows = []
+                    for kid in sorted(cur["k"]):
+                        n1 = cur["k"][kid]
+                        row = {"id": kid, "kw": names.get(kid, kid), "n1": n1}
+                        if can:
+                            n0 = sum(b.get("cat", {}).get(cat, {}).get("k", {}).get(kid, 0) for b in bviews)
+                            row.update(n0=n0, **compare_counts(n1, cur["N"], n0, Nc0))
+                        else:
+                            row.update(p1=round(n1 / cur["N"] * 100, 2))
+                        rows.append(row)
+                    rows.sort(key=lambda r: (-r["n1"], r["kw"]))
+                    catv[cat] = {"N": cur["N"], "N0": Nc0, "cmp": can, "rows": rows}
+                v["catv"] = catv
+
+
+def build_gaps(views, periods):
+    """같은 기간의 뉴스·정책 문서 비중을 견준 `gap`을 통합 화면(`all`)에 붙인다 (docs/insight_views.md §4)."""
+    for pt, plist in periods.items():
+        for p in plist:
+            nv, pv = views["%s|%s|news" % (pt, p["start"])], views["%s|%s|policy" % (pt, p["start"])]
+            Nn, Np = nv["analyzed"], pv["analyzed"]
+            gap = {"Nn": Nn, "Np": Np, "ok": Nn >= MIN_TYPE_DOCS and Np >= MIN_TYPE_DOCS}
+            if gap["ok"]:
+                cn, cp = {s["id"]: s["dc"] for s in nv["stats"]}, {s["id"]: s["dc"] for s in pv["stats"]}
+                label = {s["id"]: s["kw"] for s in nv["stats"] + pv["stats"]}
+                rows = []
+                for kid in set(cn) | set(cp):
+                    a, b = cn.get(kid, 0), cp.get(kid, 0)
+                    c = compare_counts(a, Nn, b, Np)
+                    rows.append({"id": kid, "kw": label[kid], "nn": a, "np": b, "pn": c["p1"], "pp": c["p0"], "d": c["d"], "z": c["z"],
+                                 "tag": "only_news" if b == 0 and a >= MIN_COUNT else ("only_policy" if a == 0 and b >= MIN_COUNT else "")})
+                gap["news"] = sorted((r for r in rows if r["d"] > 0 and r["nn"] >= MIN_COUNT), key=lambda r: (-r["d"], r["kw"]))[:TOP_N]
+                gap["policy"] = sorted((r for r in rows if r["d"] < 0 and r["np"] >= MIN_COUNT), key=lambda r: (r["d"], r["kw"]))[:TOP_N]
+            views["%s|%s|all" % (pt, p["start"])]["gap"] = gap
+
+
+def background_keywords(analyzed, kids_by_doc):
+    """자료 유형마다 전체 기간 문서의 BACKGROUND_SHARE 이상에 나오는 키워드(상시 키워드)의 keyword_id 목록."""
+    out = {}
+    for tid, _ in TYPES:
+        docs = [r for _, r in analyzed if tid == "all" or cell(r, "source_type") == tid]
+        if len(docs) < BACKGROUND_MIN_DOCS:
+            out[tid] = []
+            continue
+        counts = defaultdict(int)
+        for r in docs:
+            for kid in kids_by_doc.get(cell(r, "document_id"), ()):
+                counts[kid] += 1
+        out[tid] = sorted(k for k, n in counts.items() if n / len(docs) >= BACKGROUND_SHARE)
+    return out
 
 
 def apply_streaks(views, periods):
@@ -233,6 +392,7 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
             terms = []
         terms_by_doc[(cell(r, "document_id"), cell(r, "keyword_id"))] = [t for t in terms if isinstance(t, str)]
 
+    kid_cat = {k: m["c"] for k, m in (meta or {}).items() if m.get("c")}
     doc_list, doc_index = [], {}
 
     def index_of(row):
@@ -272,8 +432,11 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
                     "ev": dict(evidence),
                     "ctx": compute_context([m[1] for m in members], kids_by_doc, names, terms_by_doc),
                     "scope": scope_by_source([m[1] for m in members]),
+                    "cat": category_counts([m[1] for m in members], kids_by_doc, kid_cat),
                 }
     apply_streaks(views, periods)
+    build_changes(views, periods, names)
+    build_gaps(views, periods)
     coverage = {}
     for tid in SOURCE_TYPES:
         days = [d.isoformat() for d, r in analyzed if cell(r, "source_type") == tid]
@@ -295,6 +458,8 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
         "coverage": coverage,
         "commonRange": common,
         "meta": meta or {},
+        "background": background_keywords(analyzed, kids_by_doc),
+        "categories": sorted(set(kid_cat.values())),
     }
 
 

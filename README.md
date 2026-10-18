@@ -107,7 +107,7 @@ python src/collect_policy.py --source-id policy-kr-001 --limit 10
 | `data/processed/document_keywords.csv` | 문서 × 표준 키워드 |
 | `data/processed/keyword_stats.csv` | 기간·자료유형별 문서 빈도·출현 횟수·비율·순위 |
 | `data/processed/collect_log.json` | 수집 성공·제외·실패 건수와 사유 |
-| `data/processed/dashboard.html` | 대시보드 (집계 CSV 필요). 키워드를 누르면 설명·분야, 출처 수·연속 기간, 근거 문서·함께 나온 키워드·출처·표기를 볼 수 있다 |
+| `data/processed/dashboard.html` | 대시보드 (집계 CSV 필요). 화면은 네 탭이다: **평소와 비교**(직전 기간 대비 키워드 비중의 변화), **뉴스 vs 정책**(같은 기간 두 유형의 비중 차이), **분야 안에서**(큰 주제 안의 키워드 비중), **순위·추이**. 키워드를 누르면 설명·분야, 출처 수·연속 기간, 근거 문서·함께 나온 키워드·출처·표기를 볼 수 있다. 정의와 한계는 `docs/insight_views.md` |
 | `reports/` | 주간·월간 보고서 (예시는 `reports/examples/`) |
 
 필드 정의는 [docs/data_dictionary.md](docs/data_dictionary.md).
