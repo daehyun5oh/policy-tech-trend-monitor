@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import csv
 import sys
 import unittest
 from pathlib import Path
@@ -403,9 +404,17 @@ class SourceSelectionTest(unittest.TestCase):
             self.assertEqual(row["access_method"], "html_list")
 
     def test_kistep_is_not_collected_yet(self):
-        """KISTEP 은 이용 조건 확인 전이라 제외돼야 한다(이슈 #31)."""
+        """KISTEP 은 이용 조건을 확인했지만(이슈 #31) 수집 경로가 PDF 라 제외된다.
+
+        `access_method` 가 `pdf_list` 여서 이 수집기의 대상이 아니다.
+        PDF 수집기를 만들면 그때 대상에 들어온다.
+        """
         ids = {r["source_id"] for r in ch.load_sources()}
         self.assertNotIn("policy-kr-005", ids)
+        rows = {r["source_id"]: r for r in csv.DictReader(
+            (ROOT / "config" / "sources.csv").open(encoding="utf-8"))}
+        self.assertEqual(rows["policy-kr-005"]["access_method"], "pdf_list")
+        self.assertEqual(rows["policy-kr-005"]["access_check_status"], "terms_ok_local")
 
 
 if __name__ == "__main__":
