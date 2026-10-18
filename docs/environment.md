@@ -24,9 +24,16 @@
 | `src/collect_policy.py` (B) | 허용 (`requirements.txt`) | RSS·HTML 파싱을 직접 구현하면 오류 위험이 큼 |
 | `src/collect_news.py` (A) | 쓰지 않음 | 표준 라이브러리로 충분. 바꿀 이유가 없다 |
 | `src/extract_keywords.py`, `src/validate_csv.py`, `src/schema.py`, `dashboard/app.py` | **쓰지 않음** | 이 단계들은 설치 없이 실행되어야 한다 |
-| 집계(`aggregate.py`), 보고서 생성(`generate_report.py`) (B) | 쓰지 않는 것을 원칙으로 함 | B의 기존 방침: pandas 없이 표준 라이브러리 `csv`로 처리 |
+| `src/collect_html.py` (B) | 허용 (`requests`, `beautifulsoup4`, `lxml`) | 출처마다 HTML 구조가 달라 파서가 필요 |
+| `src/normalize.py`, `src/aggregate.py`, `src/generate_report.py`, `src/pipeline.py` (B) | **쓰지 않음** | B의 방침: pandas 없이 표준 라이브러리 `csv`로 처리. 실제로 표준 라이브러리만 쓴다 |
 
-`tests/test_stdlib_only.py`가 "쓰지 않음" 영역이 표준 라이브러리만 가져오는지 검사한다. 이 경계를 넓히려면(예: 집계에 외부 패키지) 이 문서와 테스트를 함께 바꾸고 상대와 합의한다.
+`tests/test_stdlib_only.py`가 "쓰지 않음" 영역이 표준 라이브러리만 가져오는지 검사한다(B 모듈은 파일이 `main`에 들어온 뒤부터 자동으로 검사). 이 경계를 넓히려면(예: 집계에 외부 패키지) 이 문서와 테스트를 함께 바꾸고 상대와 합의한다.
+
+## 테스트 규칙
+
+- 모든 테스트는 **`unittest.TestCase`** 클래스로 쓴다. `python -m unittest discover -s tests`가 설치 없이 전부 모아 실행해야 한다.
+- pytest 함수형 테스트(`def test_...`만 있고 클래스가 없는 파일)는 `unittest discover`가 **모으지 못한다.** pytest가 설치된 환경에서는 오류 없이 조용히 빠지고, 설치되지 않은 환경에서는 `import pytest` 오류로 실패한다. 새 테스트는 처음부터 `unittest`로 쓰고, 기존 pytest 테스트는 `unittest`로 바꾼다(기계적 변환: `tmp_path` → `tempfile.TemporaryDirectory`, `monkeypatch` → `unittest.mock.patch`, `parametrize` → `subTest`, `pytest.raises` → `assertRaises`).
+- **수집 계층(`collect_policy.py`, `collect_html.py`)을 검증하는 테스트**는 수집 의존성(`requests`, `beautifulsoup4` 등)을 가져와도 된다. 단 의존성이 없는 환경에서 `unittest`가 실패하지 않도록 **가져오기에 실패하면 건너뛰게**(`unittest.skip`, 사유에 `pip install -r requirements.txt` 안내) 쓴다. 건너뛴 사실은 실행 결과(`skipped=N`)에 보인다.
 
 ## 확인 상태
 
