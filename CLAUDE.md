@@ -34,7 +34,7 @@ python src/validate_csv.py --documents data/processed/documents.csv --keywords d
 - **의존성 경계**: 외부 패키지는 수집 계층(`src/collect_policy.py`)에서만 쓰고 `requirements.txt`에 버전을 고정한다. 추출·집계·검증·대시보드·테스트는 표준 라이브러리만 쓴다(`docs/environment.md`, `tests/test_stdlib_only.py`). 경계를 넓힐 때는 상대와 합의한다.
 - Windows 콘솔에서 한글이 깨지면 `PYTHONIOENCODING=utf-8`을 지정한다. `python`이 실행되지 않으면 Microsoft Store 별칭 때문일 수 있다(환경 문서 참조).
 - `data/raw/`, `data/processed/`는 Git에 올리지 않는다.
-- 새 기능에는 테스트를 함께 둔다. 변경한 뒤에는 위 테스트가 모두 통과해야 한다.
+- 새 기능에는 테스트를 함께 둔다. 변경한 뒤에는 위 테스트가 모두 통과해야 한다. 테스트는 `unittest.TestCase`로 쓴다(함수형 pytest 테스트는 `unittest discover`가 모으지 못함. `docs/environment.md` §테스트 규칙).
 
 ## 반드시 지킬 규칙
 
