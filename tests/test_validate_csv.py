@@ -231,5 +231,25 @@ class DailyStatsRuleTest(ValidatorTestCase):
         self.assertReported(self.check(stats=bad), "일간은 시작일과 종료일이 같아야 함")
 
 
+class TextCharsColumnTest(unittest.TestCase):
+    def run_with(self, value):
+        fields, rows = read(SOURCES["documents"])
+        for r in rows:
+            r["text_chars"] = value
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "documents.csv"
+            write(path, fields + ["text_chars"], rows)
+            return [m for _, _, m in vc.run(documents=str(path)).errors]
+
+    def test_integers_and_blank_are_accepted(self):
+        self.assertEqual(self.run_with("0"), [])
+        self.assertEqual(self.run_with("8056"), [])
+        self.assertEqual(self.run_with(""), [])
+
+    def test_other_values_are_reported(self):
+        self.assertTrue(any("text_chars" in m for m in self.run_with("-3")))
+        self.assertTrue(any("text_chars" in m for m in self.run_with("많음")))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -46,7 +46,7 @@
 - `document_id` 는 파일 전체에서 중복되지 않아야 한다
 - `duplicate_of` 가 가리키는 `document_id` 는 같은 파일 안에 존재해야 하고, 그 행의 `status` 는 `analyzed` 여야 한다
 
-### 제안 중인 선택 열 — `text_chars` (합의 전, 미구현)
+### 선택 열 — `text_chars` (합의함. A 쪽 구현 완료, B 쪽 구현 대기)
 
 | 필드 | 필수 | 타입 | 허용값·형식 | 설명 |
 |---|---|---|---|---|
@@ -209,7 +209,8 @@ A가 동의하면 B 쪽 변경과 이 표의 「제안 중인」 표시 제거�
 | 2026-10-17 | 기획안 §6을 기준으로 초안 작성. `is_partial_period` 필드 추가 제안 | B |
 | 2026-10-17 | §5 중복 제거에 "같은 문서"와 "내용 중복" 구분을 추가. 구현(이슈 #9) 중 1·2단계 일치는 `document_id` 까지 같아져 `duplicate_of` 연결이 성립하지 않는 것을 확인했다 | B |
 | 2026-10-18 | §2에 선택 열 `text_chars` 를 제안으로 추가. PR #50에서 A가 물은 "분석 범위만으로는 본문 길이를 알 수 없다"에 대한 답이다. 수집기 양쪽과 `schema.py` 를 함께 고쳐야 유지되는 것을 확인해 담당별 변경 목록을 함께 적었다 | B |
+| 2026-10-19 | `text_chars` 합의. A 쪽(`schema.py`, `collect_news.py`, `validate_csv.py`) 구현 완료. 뉴스 행: 요약·본문을 받은 행은 글자 수, 제목만 분석한 행은 `0`, 제외·실패 행은 빈 값 | A |
 
 `is_partial_period` 는 기획안 §6 필드 목록에는 없지만, §4의 "진행 중인 주·월은 부분 기간으로 표시한다" 를 CSV에서 구분하려면 필요하다. **합의 완료** — A의 `src/schema.py` 가 `STATS_OPTIONAL_COLUMNS` 로 받아들이고, 대시보드와 검증기가 쓰고 있다(이슈 #18 대조에서 확인).
 
-`text_chars` 는 아직 **합의 전이며 구현하지 않았다.** §2의 제안 절에 담당별 변경 목록이 있다.
+`text_chars` 는 **합의했다**(2026-10-19, A). A 쪽은 구현했다: `src/schema.py` 의 `DOCUMENT_OPTIONAL_COLUMNS`, `src/collect_news.py`(뉴스 행에 값을 채우고 정책 행의 값을 보존), `src/validate_csv.py`(값이 있으면 0 이상의 정수인지 검사). **B 쪽(`src/normalize.py`, `src/collect_policy.py`, `src/collect_html.py`)은 아직이다.** §2의 목록 참고.

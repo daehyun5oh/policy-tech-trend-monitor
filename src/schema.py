@@ -11,6 +11,9 @@ DOCUMENT_COLUMNS = [
     "original_url", "published_date", "collected_at", "analysis_scope",
     "content_hash", "status", "exclusion_reason", "duplicate_of",
 ]
+# 선택 열: 있으면 값을 검사하고 수집기가 지우지 않는다 (docs/data_dictionary.md §2 text_chars).
+# text_chars: 정제를 마친 본문 글자 수(제목 제외). 제목만 분석한 행은 0, 제외·실패 행은 빈 값.
+DOCUMENT_OPTIONAL_COLUMNS = ["text_chars"]
 KEYWORD_COLUMNS = [
     "document_id", "keyword_id", "keyword", "matched_terms", "occurrences",
     "dictionary_version",
