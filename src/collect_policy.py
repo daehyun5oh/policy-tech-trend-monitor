@@ -9,8 +9,9 @@
 허용된 경로만 쓴다. `access_check_status` 가 `terms_ok` 또는 `terms_ok_local`
 인 출처만 수집한다 (기획안 §11).
 
-현재 구현된 접근 방식은 `rss` 뿐이다. `html_list`(미국·중국 5곳)는 사이트마다
-구조가 달라 이슈 #37 로 분리했다.
+이 파일은 `rss` 경로를 맡는다. `html_list`(미국·중국 5곳)는 사이트마다 구조가
+달라 `src/collect_html.py` 로 분리했다(이슈 #37). 두 수집기는 같은 정제 모듈
+(`src/normalize.py`)과 같은 `documents.csv` 규격을 쓰고, 서로의 행을 지우지 않는다.
 
 사용법
     python src/collect_policy.py --dry-run
@@ -214,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if skipped:
         print(f"\n건너뛴 {len(skipped)}곳은 access_method 가 rss 가 아닙니다. "
-              f"html_list 수집기는 이슈 #37 입니다.")
+              f"html_list 출처는 src/collect_html.py 로 수집합니다.")
 
     if args.dry_run:
         print("\n--dry-run 이므로 요청하지 않았습니다.")

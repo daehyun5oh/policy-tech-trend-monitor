@@ -300,5 +300,20 @@ class ContextPanelModelTest(unittest.TestCase):
         self.assertEqual(app.load_meta(ROOT / "none.csv"), {})
 
 
+class ScopeNoticeTest(unittest.TestCase):
+    def test_scope_by_source_counts_each_scope(self):
+        rows = [{"source_name": "B사", "analysis_scope": "title"}, {"source_name": "B사", "analysis_scope": "title"},
+                {"source_name": "A사", "analysis_scope": "title_body"}, {"source_name": "A사", "analysis_scope": "title_summary"},
+                {"source_name": "A사", "analysis_scope": "title_body"}, {"source_name": "C사", "analysis_scope": "unknown"}]
+        self.assertEqual(app.scope_by_source(rows), [["A사", 0, 1, 2], ["B사", 2, 0, 0]])
+
+    def test_every_view_carries_the_scope_counts(self):
+        m = model()
+        v = m["views"]["weekly|2026-09-21|news"]  # F001, F002(title) + F010(title_summary)
+        self.assertEqual(v["scope"], [["fixture-news", 2, 1, 0]])
+        self.assertEqual(m["views"]["weekly|2026-10-05|news"]["scope"], [])  # 분석 문서 없는 기간
+        self.assertEqual(m["views"]["weekly|2026-09-21|all"]["scope"], v["scope"])
+
+
 if __name__ == "__main__":
     unittest.main()

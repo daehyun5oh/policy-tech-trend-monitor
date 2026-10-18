@@ -117,7 +117,9 @@ def extract_source_document_id(url: str) -> str:
 # ──────────────────────────── 날짜 ────────────────────────────
 
 _DATE_FORMATS = ("%Y.%m.%d", "%Y-%m-%d", "%Y/%m/%d",
-                 "%a, %d %b %Y %H:%M:%S %z", "%d %b %Y", "%B %d, %Y")
+                 "%a, %d %b %Y %H:%M:%S %z", "%d %b %Y", "%B %d, %Y",
+                 # 영문 출처는 월을 줄여 쓰기도 한다 (중국과학원 `Oct 04, 2026`)
+                 "%b %d, %Y", "%b %d %Y", "%B %d %Y")
 _DATE_RE = re.compile(r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})")
 
 
