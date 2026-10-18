@@ -176,5 +176,42 @@ class AccumulationTest(unittest.TestCase):
             self.assertNotIn("news-old", got)  # 뉴스 행은 이번 결과로 다시 만든다
 
 
+class TextCharsTest(unittest.TestCase):
+    def test_text_chars_counts_body_not_title_and_blank_for_excluded(self):
+        items = [
+            {"title": "제목은 세지 않는다", "url": "https://a.test/1", "source_document_id": "", "published": "2026-10-10",
+             "text": "요약 열 글자입니다", "full_text": False, "source_name": "A사"},
+            {"title": "요약 없는 기사", "url": "https://a.test/2", "source_document_id": "", "published": "2026-10-10",
+             "text": "", "full_text": False, "source_name": "A사"},
+            {"title": "기간 밖", "url": "https://a.test/3", "source_document_id": "", "published": "2025-01-01",
+             "text": "내용", "full_text": False, "source_name": "A사"},
+            {"title": "같은 글", "url": "https://a.test/1/", "source_document_id": "", "published": "2026-10-10",
+             "text": "요약 열 글자입니다", "full_text": False, "source_name": "A사"},
+        ]
+        rows, _ = cn.build_documents(items, NOW, cn.parse_date("2026-10-01"), cn.parse_date("2026-10-31"))
+        self.assertEqual([(r["status"], r["analysis_scope"], r["text_chars"]) for r in rows], [
+            ("analyzed", "title_summary", str(len("요약 열 글자입니다"))),
+            ("analyzed", "title", "0"),
+            ("excluded", "title_summary", ""),   # 기간 밖
+            ("excluded", "title_summary", ""),   # 중복
+        ])
+
+    def test_optional_column_is_written_and_kept_for_other_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            fields = cn.ALL_COLUMNS
+            with open(out / "documents.csv", "w", encoding="utf-8", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
+                w.writeheader()
+                w.writerow({k: "" for k in fields} | {"document_id": "policy-x", "source_type": "policy", "text_chars": "98"})
+            rows, texts = cn.build_documents([], NOW)
+            cn.write_outputs(out, rows, texts, {})
+            with open(out / "documents.csv", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+                got = list(reader)
+            self.assertEqual(reader.fieldnames, cn.DOCUMENT_COLUMNS + ["text_chars"])
+            self.assertEqual([(r["document_id"], r["text_chars"]) for r in got], [("policy-x", "98")])
+
+
 if __name__ == "__main__":
     unittest.main()

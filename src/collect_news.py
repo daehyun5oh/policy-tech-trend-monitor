@@ -43,7 +43,9 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from schema import DOCUMENT_COLUMNS, STATUS_ANALYZED, STATUS_EXCLUDED  # noqa: E402
+from schema import DOCUMENT_COLUMNS, DOCUMENT_OPTIONAL_COLUMNS, STATUS_ANALYZED, STATUS_EXCLUDED  # noqa: E402
+
+ALL_COLUMNS = DOCUMENT_COLUMNS + DOCUMENT_OPTIONAL_COLUMNS
 
 CSV_SOURCE_NAME = "GeekNews"
 USER_AGENT = "policy-tech-trend-monitor/0.1 (graduate course project; manual run)"
@@ -244,7 +246,7 @@ def build_documents(items, collected_at, date_from=None, date_to=None, source_na
         published = parse_date(item["published"])
         text = item["text"]
         scope = ("title_body" if item.get("full_text") else "title_summary") if text else "title"
-        row = dict.fromkeys(DOCUMENT_COLUMNS, "")
+        row = dict.fromkeys(ALL_COLUMNS, "")
         row.update({
             "source_type": "news", "source_name": name,
             "source_document_id": item["source_document_id"], "title": title,
@@ -265,12 +267,13 @@ def build_documents(items, collected_at, date_from=None, date_to=None, source_na
             row.update(status=STATUS_EXCLUDED, exclusion_reason="out_of_period")
         else:
             row["status"] = STATUS_ANALYZED
+            row["text_chars"] = str(len(text)) if scope != "title" else "0"
             # 중복 제거 순서: 같은 출처의 원문 ID -> 정규화 URL -> content_hash. 먼저 수집한 문서가 대표.
             keys = [("sid", name, item["source_document_id"]), ("url", normalize_url(url)),
                     ("hash", row["content_hash"])]
             rep = next((first_by_key[k] for k in keys if k[-1] and k in first_by_key), None)
             if rep:
-                row.update(status=STATUS_EXCLUDED, exclusion_reason="duplicate", duplicate_of=rep)
+                row.update(status=STATUS_EXCLUDED, exclusion_reason="duplicate", duplicate_of=rep, text_chars="")
             else:
                 for k in keys:
                     if k[-1]:
@@ -294,9 +297,9 @@ def read_other_rows(path):
 
 def write_outputs(out_dir, rows, texts, log):
     out_dir.mkdir(parents=True, exist_ok=True)
-    rows = list(rows) + [{k: (r.get(k) or "") for k in DOCUMENT_COLUMNS} for r in read_other_rows(out_dir / "documents.csv")]
+    rows = list(rows) + [{k: (r.get(k) or "") for k in ALL_COLUMNS} for r in read_other_rows(out_dir / "documents.csv")]
     with open(out_dir / "documents.csv", "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=DOCUMENT_COLUMNS, lineterminator="\n")
+        w = csv.DictWriter(f, fieldnames=ALL_COLUMNS, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
     if texts:

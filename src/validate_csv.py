@@ -24,7 +24,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from schema import (PARTIAL_VALUES, DOCUMENT_COLUMNS, KEYWORD_COLUMNS, NOT_APPLICABLE, PERIOD_TYPES, SCOPES,  # noqa: E402
+from schema import (PARTIAL_VALUES, DOCUMENT_COLUMNS, DOCUMENT_OPTIONAL_COLUMNS, KEYWORD_COLUMNS, NOT_APPLICABLE, PERIOD_TYPES, SCOPES,  # noqa: E402
                     SOURCE_TYPES, STATS_COLUMNS, STATS_SOURCE_TYPES, STATUS_ANALYZED,
                     STATUS_EXCLUDED, STATUSES)
 
@@ -103,6 +103,8 @@ def validate_documents(path, report):
             report.add(name, n, "source_type은 %s 중 하나여야 함 (값: %r)" % ("/".join(SOURCE_TYPES), v("source_type")))
         if status not in STATUSES:
             report.add(name, n, "status는 %s 중 하나여야 함 (값: %r)" % ("/".join(STATUSES), status))
+        if "text_chars" in DOCUMENT_OPTIONAL_COLUMNS and "text_chars" in r and v("text_chars") and to_int(v("text_chars")) is None:
+            report.add(name, n, "text_chars는 0 이상의 정수이거나 비어 있어야 함 (값: %r)" % v("text_chars"))
         scope = v("analysis_scope")
         if scope and scope not in SCOPES:
             report.add(name, n, "analysis_scope는 %s 중 하나여야 함 (값: %r)" % ("/".join(SCOPES), scope))
