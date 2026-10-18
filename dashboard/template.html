@@ -49,6 +49,8 @@ main h2 { margin: 0 0 6px; font-size: 1.15rem; letter-spacing: -0.01em; }
 .note { margin: 8px 0; padding: 8px 12px; border-left: 4px solid var(--muted); background: var(--panel); font-size: 0.93rem; }
 .note.partial { border-left: 4px dashed var(--policy); background: var(--partial-bg); }
 .note.alert { border-left-color: var(--alert); background: var(--alert-bg); }
+.note.scope summary { cursor: pointer; font-weight: 600; }
+.note.scope .chips { margin: 8px 0 0; }
 .block { margin-top: 28px; }
 .ranks { margin: 12px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
 .rowbtn { display: grid; grid-template-columns: 3.4rem minmax(7rem, 13rem) minmax(0, 1fr); align-items: center; gap: 12px; width: 100%; padding: 9px 4px; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
@@ -276,6 +278,27 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
     }
     if (v.csvTotal !== null && v.csvTotal !== v.analyzed) {
       box.appendChild(el('p', 'note alert', 'keyword_stats.csv의 total_documents(' + v.csvTotal + ')와 documents.csv에서 센 분석 문서 수(' + v.analyzed + ')가 다릅니다. 두 파일을 같은 실행 결과로 다시 만드세요.'));
+    }
+    // 출처마다 분석한 텍스트 범위가 다르면 알린다. 제목만 분석한 문서는 제목에 없는 키워드를 잡을 수 없어,
+    // 출처끼리 문서 빈도를 그대로 견주면 불리한 출처가 생긴다.
+    if (v.scope && v.scope.length) {
+      var kinds = {};
+      v.scope.forEach(function (r) { r.slice(1).forEach(function (n, i) { if (n > 0) kinds[i] = true; }); });
+      var det = el('details', 'note scope');
+      var sm = el('summary', null, '출처별 분석 범위' + (Object.keys(kinds).length > 1 ? ' — 출처마다 다름' : ''));
+      det.appendChild(sm);
+      var ul = el('ul', 'chips');
+      v.scope.forEach(function (r) {
+        var parts = [];
+        if (r[1]) parts.push('제목만 ' + r[1]);
+        if (r[2]) parts.push('제목+요약 ' + r[2]);
+        if (r[3]) parts.push('제목+본문 ' + r[3]);
+        ul.appendChild(el('li', null, r[0] + ': ' + parts.join(' · ')));
+      });
+      det.appendChild(ul);
+      det.appendChild(el('p', 'fine', '제목만 분석한 문서는 제목에 없는 키워드를 잡을 수 없고, 요약이나 본문이 짧은 출처도 마찬가지입니다. 분석 범위가 다른 출처끼리 문서 빈도를 그대로 견주지 마세요.'));
+      det.open = Object.keys(kinds).length > 1;
+      box.appendChild(det);
     }
     if (state.type === 'all') {
       ['news', 'policy'].forEach(function (k) {

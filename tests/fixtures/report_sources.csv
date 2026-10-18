@@ -1,0 +1,4 @@
+source_id,source_type,source_name,organization,country,language,access_method,list_url,access_check_status,access_check_date,redistribution,collect_from,collect_to,owner,note
+t-kr-1,policy,시험정책,시험기관,KR,ko,rss,https://p.go.kr/rss,terms_ok,2026-10-17,kogl_per_item,2026-05-01,2026-10-31,B,시험용
+t-cn-1,policy,시험중국,시험기관CN,CN,en,html_list,https://cn.example/list,terms_ok_local,2026-10-17,local_only_no_publish,2026-05-01,2026-10-31,B,시험용 재배포 제한
+t-news-1,news,시험뉴스,시험언론,KR,ko,rss,https://n.kr/rss,terms_ok,2026-10-17,text_only_no_images,2026-05-01,2026-10-31,A,시험용

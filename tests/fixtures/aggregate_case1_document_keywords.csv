@@ -1,0 +1,11 @@
+document_id,keyword_id,keyword,matched_terms,occurrences,dictionary_version
+policy-0001,kw-ai,인공지능,"[""AI"",""인공지능""]",5,2026-10-17
+policy-0001,kw-quantum,양자,"[""양자""]",2,2026-10-17
+policy-0002,kw-ai,인공지능,"[""인공지능""]",3,2026-10-17
+policy-0003,kw-ai,인공지능,"[""AI""]",1,2026-10-17
+policy-0003,kw-semi,반도체,"[""반도체""]",4,2026-10-17
+news-0001,kw-ai,인공지능,"[""AI""]",2,2026-10-17
+news-0001,kw-quantum,양자,"[""양자컴퓨터""]",1,2026-10-17
+news-0002,kw-semi,반도체,"[""반도체""]",6,2026-10-17
+policy-0009,kw-ai,인공지능,"[""AI""]",9,2026-10-17
+policy-0010,kw-ai,인공지능,"[""AI""]",9,2026-10-17

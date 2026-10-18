@@ -127,6 +127,20 @@ def compute_context(members, kids_by_doc, names, terms_by_doc):
     return out
 
 
+SCOPE_ORDER = ("title", "title_summary", "title_body")
+
+
+def scope_by_source(members):
+    """출처별로 분석 범위(제목만, 제목+요약, 제목+본문)가 몇 건씩인지 센다.
+    반환: [[출처, 제목만, 제목+요약, 제목+본문]] (출처 이름순)."""
+    counts = defaultdict(lambda: dict.fromkeys(SCOPE_ORDER, 0))
+    for r in members:
+        scope = cell(r, "analysis_scope")
+        if scope in SCOPE_ORDER:
+            counts[cell(r, "source_name")][scope] += 1
+    return [[name] + [c[s] for s in SCOPE_ORDER] for name, c in sorted(counts.items())]
+
+
 def apply_streaks(views, periods):
     """연속 기간 수(streak)를 채운다. 분석 문서가 없는 기간은 건너뛰고(끊지 않음),
     문서는 있었는데 그 키워드가 없으면 끊는다 (docs/context_indicators.md §3-4)."""
@@ -257,6 +271,7 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
                     "stats": stats,
                     "ev": dict(evidence),
                     "ctx": compute_context([m[1] for m in members], kids_by_doc, names, terms_by_doc),
+                    "scope": scope_by_source([m[1] for m in members]),
                 }
     apply_streaks(views, periods)
     coverage = {}
