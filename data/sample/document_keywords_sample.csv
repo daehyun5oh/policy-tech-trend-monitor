@@ -1,0 +1,7 @@
+url,keyword_id,keyword,matched_terms,occurrences,dictionary_version
+https://sample.example/policy/1,kw-ai,인공지능,"[""인공지능"",""AI""]",3,sample-2026-10-17
+https://sample.example/policy/1,kw-semi,반도체,"[""반도체""]",1,sample-2026-10-17
+https://sample.example/policy/2,kw-quantum,양자,"[""양자""]",2,sample-2026-10-17
+https://sample.example/cn/9,kw-ai,인공지능,"[""artificial intelligence"",""AI""]",2,sample-2026-10-17
+https://sample.example/news/1,kw-semi,반도체,"[""반도체""]",2,sample-2026-10-17
+https://sample.example/news/2,kw-ai,인공지능,"[""인공지능""]",1,sample-2026-10-17
