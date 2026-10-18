@@ -46,6 +46,19 @@ Start-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect                    
 Unregister-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect -Confirm:$false     # 등록 삭제
 ```
 
+### 절전 중에도 실행하려면 (깨우기 타이머)
+
+작업에 `WakeToRun`을 켜 두어도, 전원 옵션의 "절전 모드 해제 타이머 허용"이 꺼져 있으면 PC가 깨어나지 않는다. 전원을 꽂았을 때만 켜는 설정(관리자 권한 불필요):
+
+```powershell
+$sub = "238c9fa8-0aad-41ed-83f4-97be242c8f20"; $set = "bd3b718a-0680-4d9d-8ab2-e1d2b4ac806d"   # 절전 / 절전 모드 해제 타이머 허용
+powercfg /setacvalueindex SCHEME_CURRENT $sub $set 1   # 전원 연결 시: 사용
+powercfg /setdcvalueindex SCHEME_CURRENT $sub $set 0   # 배터리 시: 사용 안 함
+powercfg /setactive SCHEME_CURRENT
+```
+
+배터리로 절전에 들어가 있으면 실행되지 않고, 깨운 뒤 `StartWhenAvailable`로 가능한 빨리 돈다. 덮개를 닫았을 때 동작은 기기마다 달라 보장하지 않는다. 대시보드·수집 기록으로 실제 실행 여부를 확인한다.
+
 ## 한계와 주의
 
 - **PC가 꺼져 있거나 로그아웃 상태면 실행되지 않는다.** 시각을 놓치면 켜진 뒤 한 번 돌지만, 그 사이에 피드에서 밀려난 기사(특히 ZDNet Korea는 약 15시간치)는 받을 수 없다.

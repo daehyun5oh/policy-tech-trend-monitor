@@ -98,6 +98,18 @@ python src/collect_policy.py --source-id policy-kr-001 --limit 10
 - 한 출처가 실패해도 나머지는 수집하고, 실패한 출처는 종료 코드와 수집 기록(`data/processed/collect_log*.json`)의 사유(`fetch_error`, `parse_error`)로 알린다. **자동 재시도는 하지 않는다.**
 - 검증 명령은 뉴스와 정책의 수집 기간이 같은지도 경고한다.
 - **정기 수집(뉴스)**: 피드는 최근 기사만 주므로 `python src/run_daily.py` 하나로 수집 → 추출 → 집계 → 검증 → 대시보드 갱신을 돌리고, Windows 작업 스케줄러로 하루 두 번 자동 실행할 수 있다. 설정·확인·삭제 방법과 한계는 [docs/automation.md](docs/automation.md). 정책 수집은 외부 패키지가 필요해 이 실행기에 들어 있지 않다.
+- **자동 수집 설정(Windows, 처음 한 번)**: 아래를 PowerShell에서 저장소 폴더 기준으로 실행하면 매일 09:00·21:00에 `run_daily.py`가 돈다. `main`을 체크아웃한 상태로 두고, 노트북이면 전원을 꽂아 둔다.
+
+  ```powershell
+  $repo = (Get-Location).Path
+  $py   = (Get-Command pythonw).Source
+  $act  = New-ScheduledTaskAction -Execute $py -Argument "src/run_daily.py" -WorkingDirectory $repo
+  $trg  = @((New-ScheduledTaskTrigger -Daily -At 09:00), (New-ScheduledTaskTrigger -Daily -At 21:00))
+  $set  = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable -WakeToRun -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
+  Register-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect -Action $act -Trigger $trg -Settings $set
+  ```
+
+  확인은 `Get-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect | Get-ScheduledTaskInfo`, 기록은 `data/logs/`. 절전 중 PC를 깨우려면 전원 옵션의 "절전 모드 해제 타이머"가 켜져 있어야 한다. 자세한 설명·삭제·한계는 [docs/automation.md](docs/automation.md). 정책 수집은 외부 패키지가 필요해 이 실행기에 들어 있지 않다.
 - 대시보드의 **일간 보기**는 집계 결과에 `daily` 기간이 있어야 나온다.
 
 ## 4. 결과 확인
