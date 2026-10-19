@@ -328,6 +328,82 @@ class ValidateTest(unittest.TestCase):
 
 # ──────────────────────────── CSV 왕복 ────────────────────────────
 
+# ──────────────────────── 선택 열 text_chars (PR #60 합의) ────────────────────────
+
+class TextCharsTest(unittest.TestCase):
+    """정제를 마친 본문 글자 수. 제목은 세지 않는다.
+
+    규격은 `docs/data_dictionary.md` §2 이고, A의 `collect_news.py` 가 뉴스 행에
+    같은 규칙을 쓴다. 제목만 분석한 행은 `0`, 제외·실패 행은 빈 값이다.
+    """
+
+    def test_column_is_in_document_fields(self):
+        self.assertIn("text_chars", nz.DOCUMENT_FIELDS)
+
+    def test_counts_body_only(self):
+        """제목 길이는 포함하지 않는다."""
+        row = make(title="아주 긴 제목을 넣어 본다", body="본문 열 글자")
+        self.assertEqual(row["text_chars"], str(len("본문 열 글자")))
+
+    def test_counts_text_after_cleaning(self):
+        """정제 뒤의 글자 수다. 태그는 세지 않는다."""
+        row = make(body="<p>첫째</p><p>둘째</p>")
+        self.assertEqual(row["text_chars"], str(len("첫째\n둘째")))
+
+    def test_zero_when_no_body(self):
+        row = make(body="")
+        self.assertEqual(row["analysis_scope"], "title")
+        self.assertEqual(row["text_chars"], "0")
+
+    def test_empty_when_excluded(self):
+        for kw in ({"published": "확인불가"}, {"published": "2026.01.05"}, {"title": "  "}):
+            with self.subTest(**kw):
+                row = make(body="본문이 있어도", **kw)
+                self.assertEqual(row["status"], "excluded")
+                self.assertEqual(row["text_chars"], "")
+
+    def test_empty_when_failed(self):
+        row = nz.failed_document(source_type="policy", source_name="출처",
+                                 original_url="https://a.kr/1", collected_at=NOW,
+                                 reason="fetch_error")
+        self.assertEqual(row["text_chars"], "")
+
+    def test_cleared_when_deduped(self):
+        """중복으로 제외된 행도 빈 값이 된다."""
+        a = make(url="https://a.kr/v?nttSeqNo=1", body="같은 본문")
+        b = make(url="https://b.kr/v?nttSeqNo=2", body="같은 본문")
+        nz.dedupe([a, b])
+        self.assertEqual(a["text_chars"], str(len("같은 본문")))
+        self.assertEqual(b["text_chars"], "")
+
+    def test_survives_csv_round_trip(self):
+        a = make(body="본문 열두 글자다")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "documents.csv"
+            merged, _ = nz.merge_documents([], [a])
+            nz.write_documents(path, merged)
+            loaded = nz.read_documents(path)
+        self.assertEqual(loaded[0]["text_chars"], str(len("본문 열두 글자다")))
+
+    def test_validate_rejects_non_integer(self):
+        rows = rows_for_csv([make()])
+        rows[0]["text_chars"] = "스물"
+        problems = nz.validate_documents(rows)
+        self.assertTrue(any("text_chars" in p for p in problems))
+
+    def test_validate_rejects_value_on_excluded_row(self):
+        rows = rows_for_csv([make(published="2026.01.05")])
+        rows[0]["text_chars"] = "100"
+        problems = nz.validate_documents(rows)
+        self.assertTrue(any("text_chars" in p for p in problems))
+
+    def test_validate_allows_empty_value(self):
+        """선택 열이라 비어 있어도 된다. 예전 CSV와도 맞는다."""
+        rows = rows_for_csv([make()])
+        rows[0]["text_chars"] = ""
+        self.assertEqual(nz.validate_documents(rows), [])
+
+
 class CsvRoundTripTest(unittest.TestCase):
 
     def test_csv_round_trip(self):

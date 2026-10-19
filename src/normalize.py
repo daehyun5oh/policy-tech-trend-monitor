@@ -31,6 +31,9 @@ DOCUMENT_FIELDS = [
     "title", "original_url", "published_date", "collected_at",
     "analysis_scope", "content_hash", "status", "exclusion_reason",
     "duplicate_of",
+    # 선택 열. 정제를 마친 본문 글자 수(제목 제외). 제목만 분석한 행은 0,
+    # 제외·실패 행은 빈 값 (docs/data_dictionary.md §2, schema.DOCUMENT_OPTIONAL_COLUMNS)
+    "text_chars",
 ]
 
 # data_dictionary.md §2 에서 status=analyzed 일 때 반드시 채워져야 하는 필드
@@ -252,6 +255,8 @@ def build_document(*, source_type: str, source_name: str, title: str,
         "status": "analyzed",
         "exclusion_reason": "",
         "duplicate_of": "",
+        # 본문 글자 수. 제목은 세지 않는다. 본문을 못 받았으면 0
+        "text_chars": str(len(body)),
         "_normalized_url": normalized,
         "_text": analyzed_text,
     }
@@ -262,6 +267,10 @@ def build_document(*, source_type: str, source_name: str, title: str,
         row["status"], row["exclusion_reason"] = "excluded", "no_published_date"
     elif not in_window(published, *window):
         row["status"], row["exclusion_reason"] = "excluded", "out_of_period"
+
+    # 제외·실패 행은 빈 값으로 둔다 (A의 collect_news.py 와 같은 규격)
+    if row["status"] != "analyzed":
+        row["text_chars"] = ""
 
     return row
 
@@ -291,6 +300,7 @@ def failed_document(*, source_type: str, source_name: str, original_url: str,
         "status": "failed",
         "exclusion_reason": reason,
         "duplicate_of": "",
+        "text_chars": "",
         "_normalized_url": normalized,
         "_text": "",
     }
@@ -336,6 +346,7 @@ def dedupe(documents: list[dict], existing: list[dict] | None = None) -> dict:
             row["status"] = "excluded"
             row["exclusion_reason"] = "duplicate"
             row["duplicate_of"] = row["document_id"]
+            row["text_chars"] = ""
             row["_same_id"] = True
             counts["same_document"] += 1
             continue
@@ -346,6 +357,7 @@ def dedupe(documents: list[dict], existing: list[dict] | None = None) -> dict:
             row["status"] = "excluded"
             row["exclusion_reason"] = "duplicate"
             row["duplicate_of"] = rep
+            row["text_chars"] = ""
             counts["duplicate"] += 1
             continue
 
@@ -420,6 +432,14 @@ def validate_documents(rows: list[dict]) -> list[str]:
         stype = row.get("source_type", "")
         if stype not in SOURCE_TYPES:
             problems.append(f"{i}행: source_type 허용값이 아니다 ({stype!r})")
+
+        # 선택 열. 있으면 0 이상의 정수여야 한다 (A의 validate_csv.py 와 같은 기준)
+        chars = row.get("text_chars", "")
+        if chars not in ("", None):
+            if not str(chars).isdigit():
+                problems.append(f"{i}행: text_chars 는 0 이상의 정수이거나 비어 있어야 한다 ({chars!r})")
+            elif status != "analyzed":
+                problems.append(f"{i}행: status={status} 인데 text_chars 에 값이 있다 ({chars!r})")
 
         reason = row.get("exclusion_reason", "")
         if status == "analyzed":
