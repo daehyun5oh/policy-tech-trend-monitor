@@ -46,7 +46,7 @@
 - `document_id` 는 파일 전체에서 중복되지 않아야 한다
 - `duplicate_of` 가 가리키는 `document_id` 는 같은 파일 안에 존재해야 하고, 그 행의 `status` 는 `analyzed` 여야 한다
 
-### 선택 열 — `text_chars` (합의함. A 쪽 구현 완료, B 쪽 구현 대기)
+### 선택 열 — `text_chars` (합의·구현 완료)
 
 | 필드 | 필수 | 타입 | 허용값·형식 | 설명 |
 |---|---|---|---|---|
@@ -60,21 +60,18 @@
 - `status` 가 `excluded` 또는 `failed` 인 행은 빈 값
 - 값을 세는 시점은 정제(§5) 이후다. 같은 입력이면 같은 값이 나온다
 
-**구현 전에 A와 합의할 것 (2026-10-18 B 제안)**
+**어디서 채우는가**
 
-이 열은 **수집기 한쪽만 고쳐서는 유지되지 않는다.** `src/collect_news.py` 는 `documents.csv` 를 쓸 때 `src/schema.py` 의 `DOCUMENT_COLUMNS` 를 열 목록으로 쓰고, 뉴스가 아닌 행도 그 목록에 맞춰 다시 쓴다. 그래서 정책 수집기가 `text_chars` 를 채워도 **뉴스 수집을 한 번 돌리면 열이 사라진다.**
-
-필요한 변경은 다음과 같다.
-
-| 파일 | 담당 | 변경 |
+| 파일 | 담당 | 몫 |
 |---|---|---|
-| `src/schema.py` | A | `DOCUMENT_OPTIONAL_COLUMNS = ["text_chars"]` 추가 (집계 쪽 `STATS_OPTIONAL_COLUMNS` 와 같은 방식) |
-| `src/collect_news.py` | A | 쓸 때 선택 열을 보존 (값이 없으면 빈 값) |
-| `src/normalize.py`, `src/collect_policy.py`, `src/collect_html.py` | B | 본문 글자 수를 채운다 |
-| `src/validate_csv.py` | A | 값이 있으면 0 이상의 정수인지 검사 (선택) |
-| `dashboard/app.py` | A | 출처별 분석 범위 옆에 분량을 함께 보여 줄지 (선택) |
+| `src/schema.py` | A | `DOCUMENT_OPTIONAL_COLUMNS` 에 등록 |
+| `src/collect_news.py` | A | 뉴스 행을 채우고, **정책 행의 값을 지우지 않는다** |
+| `src/validate_csv.py` | A | 값이 있으면 0 이상의 정수인지 검사 |
+| `src/normalize.py` | B | 정책 행을 채운다. `build_document()` 가 본문 글자 수를 세고, 제외·실패·중복 행은 빈 값으로 되돌린다 |
+| `src/collect_policy.py`, `src/collect_html.py` | B | 위 함수를 그대로 쓴다 |
+| `dashboard/app.py` | A | 출처별 분량 표시 (예정) |
 
-A가 동의하면 B 쪽 변경과 이 표의 「제안 중인」 표시 제거를 한 번에 올린다.
+**한쪽만 고치면 유지되지 않는다.** `collect_news.py` 는 `documents.csv` 를 쓸 때 `schema.py` 의 열 목록으로 **뉴스가 아닌 행까지 다시 쓴다.** 그래서 선택 열을 더할 때는 양쪽 수집기와 `schema.py` 를 함께 고쳐야 한다. 2026-10-19 에 두 수집기를 번갈아 돌려 **정책 행의 값이 보존되는 것**을 확인했다.
 
 ## 3. `status` 와 `exclusion_reason` 허용값
 
@@ -210,7 +207,8 @@ A가 동의하면 B 쪽 변경과 이 표의 「제안 중인」 표시 제거�
 | 2026-10-17 | §5 중복 제거에 "같은 문서"와 "내용 중복" 구분을 추가. 구현(이슈 #9) 중 1·2단계 일치는 `document_id` 까지 같아져 `duplicate_of` 연결이 성립하지 않는 것을 확인했다 | B |
 | 2026-10-18 | §2에 선택 열 `text_chars` 를 제안으로 추가. PR #50에서 A가 물은 "분석 범위만으로는 본문 길이를 알 수 없다"에 대한 답이다. 수집기 양쪽과 `schema.py` 를 함께 고쳐야 유지되는 것을 확인해 담당별 변경 목록을 함께 적었다 | B |
 | 2026-10-19 | `text_chars` 합의. A 쪽(`schema.py`, `collect_news.py`, `validate_csv.py`) 구현 완료. 뉴스 행: 요약·본문을 받은 행은 글자 수, 제목만 분석한 행은 `0`, 제외·실패 행은 빈 값 | A |
+| 2026-10-19 | `text_chars` B 쪽 구현 완료(`normalize.py`). 정책 행을 채우고 제외·실패·중복 행은 빈 값으로 둔다. 두 수집기를 번갈아 돌려 값이 보존되는 것을 확인했다 | B |
 
 `is_partial_period` 는 기획안 §6 필드 목록에는 없지만, §4의 "진행 중인 주·월은 부분 기간으로 표시한다" 를 CSV에서 구분하려면 필요하다. **합의 완료** — A의 `src/schema.py` 가 `STATS_OPTIONAL_COLUMNS` 로 받아들이고, 대시보드와 검증기가 쓰고 있다(이슈 #18 대조에서 확인).
 
-`text_chars` 는 **합의했다**(2026-10-19, A). A 쪽은 구현했다: `src/schema.py` 의 `DOCUMENT_OPTIONAL_COLUMNS`, `src/collect_news.py`(뉴스 행에 값을 채우고 정책 행의 값을 보존), `src/validate_csv.py`(값이 있으면 0 이상의 정수인지 검사). **B 쪽(`src/normalize.py`, `src/collect_policy.py`, `src/collect_html.py`)은 아직이다.** §2의 목록 참고.
+`text_chars` 는 **합의·구현이 끝났다.** A 쪽(2026-10-19): `src/schema.py` 의 `DOCUMENT_OPTIONAL_COLUMNS`, `src/collect_news.py`(뉴스 행을 채우고 정책 행의 값을 보존), `src/validate_csv.py`(0 이상의 정수인지 검사). B 쪽(2026-10-19): `src/normalize.py` 가 정책 행을 채우고, 제외·실패·중복 행은 빈 값으로 되돌린다. 두 수집기를 번갈아 돌려 값이 보존되는 것을 확인했다. §2의 목록 참고.
