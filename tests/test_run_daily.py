@@ -80,6 +80,47 @@ class RunAllTest(unittest.TestCase):
         self.assertEqual(r["step"], "x")
 
 
+class PolicyStepsTest(unittest.TestCase):
+    def test_policy_steps_follow_news_collection_and_precede_extraction(self):
+        steps = rd.build_steps(("2026-05-01", "2026-10-31"), policy=True)
+        self.assertEqual([n for n, _ in steps],
+                         ["collect", "collect_policy", "collect_html", "extract", "aggregate", "validate", "dashboard"])
+        # 정책 수집기는 기간을 sources.csv 에서 읽으므로 인자를 주지 않는다
+        self.assertEqual(dict(steps)["collect_policy"], ["src/collect_policy.py"])
+        self.assertEqual(dict(steps)["collect_html"], ["src/collect_html.py"])
+
+    def test_policy_steps_are_off_by_default_and_with_no_collect(self):
+        self.assertNotIn("collect_policy", [n for n, _ in rd.build_steps((None, None))])
+        self.assertNotIn("collect_policy", [n for n, _ in rd.build_steps((None, None), collect=False, policy=True)])
+
+    def test_find_policy_python_prefers_the_venv_then_the_current_python(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / ".venv" / "Scripts" / "python.exe"
+            exe.parent.mkdir(parents=True)
+            exe.write_text("", encoding="utf-8")
+            venv = str(exe)
+            self.assertEqual(rd.find_policy_python(tmp, check=lambda py: True), venv)
+            self.assertEqual(rd.find_policy_python(tmp, check=lambda py: py == sys.executable), sys.executable)
+            self.assertIsNone(rd.find_policy_python(tmp, check=lambda py: False))
+
+    def test_find_policy_python_without_a_venv_uses_the_current_python_only_if_it_has_the_packages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(rd.venv_python(tmp))
+            self.assertEqual(rd.find_policy_python(tmp, check=lambda py: True), sys.executable)
+            self.assertIsNone(rd.find_policy_python(tmp, check=lambda py: False))
+
+    def test_a_policy_source_failing_is_partial_but_a_policy_crash_is_failed(self):
+        steps = rd.build_steps((None, None), policy=True)
+
+        def fake(codes):
+            return lambda name, args: {"step": name, "returncode": codes.get(name, 0), "seconds": 0.0,
+                                       "stdout_tail": "", "stderr_tail": ""}
+        self.assertEqual(rd.run_all(steps, fake({"collect_policy": 1}))[1], "partial")
+        self.assertEqual(rd.run_all(steps, fake({"collect": 1, "collect_html": 1}))[1], "partial")
+        self.assertEqual(rd.run_all(steps, fake({"collect_policy": 2}))[1], "failed")
+        self.assertEqual(rd.run_all(steps, fake({"collect_html": 1, "extract": 1}))[1], "failed")
+
+
 class LockTest(unittest.TestCase):
     def test_second_run_is_refused_while_the_lock_is_fresh(self):
         with tempfile.TemporaryDirectory() as tmp:
