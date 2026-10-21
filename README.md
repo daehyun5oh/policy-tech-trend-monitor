@@ -51,7 +51,19 @@ python dashboard/app.py --dir data/processed --out data/processed/dashboard.html
 
 ## 실제 자료로 돌리기
 
-연습용 샘플이 아니라 진짜 뉴스·정책을 모으려면 준비가 조금 더 필요합니다.
+연습용 샘플이 아니라 진짜 뉴스·정책을 모으려면 두 줄이면 됩니다.
+
+```bash
+python setup_env.py          # 처음 한 번: 가상환경(.venv)을 만들고 정책 수집기용 패키지를 설치
+python src/run_daily.py      # 뉴스·정책 수집 → 키워드 추출 → 집계 → 검증 → 대시보드 갱신
+```
+
+- 결과는 **내 컴퓨터**의 `data/processed/dashboard.html`에만 생깁니다. 서버가 없고, 수집한 자료도 저장소에 올라가지 않습니다.
+- `setup_env.py`를 건너뛰어도 됩니다. 그러면 정책 수집만 빠지고(안내 문구가 나옵니다) 뉴스 수집부터 대시보드까지는 그대로 돕니다. 정책 수집이 가능한지는 `python setup_env.py --check`로 봅니다.
+- 뉴스만 하고 싶으면 `python src/run_daily.py --no-policy`.
+- **수집한 자료를 담은 대시보드 파일과 CSV는 다른 사람에게 보내지 마세요.** 기사 제목과 링크가 들어 있어 재배포가 됩니다.
+
+아래는 단계를 하나씩 직접 돌리고 싶을 때의 명령입니다.
 
 ```bash
 pip install -r requirements.txt          # 정책 수집에만 필요합니다
@@ -102,7 +114,7 @@ $set  = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvaila
 Register-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect -Action $act -Trigger $trg -Settings $set
 ```
 
-실행 여부는 `Get-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect | Get-ScheduledTaskInfo` 와 `data/logs/` 로 확인합니다. PC가 꺼져 있거나 절전 중이면 그 시각에는 돌지 않습니다(절전 중 깨우는 설정, 삭제 방법, 한계는 [자동 실행 안내](docs/automation.md)). 정책 수집은 외부 패키지가 필요해 이 실행기에 들어 있지 않습니다.
+실행 여부는 `Get-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect | Get-ScheduledTaskInfo` 와 `data/logs/` 로 확인합니다. PC가 꺼져 있거나 절전 중이면 그 시각에는 돌지 않습니다(절전 중 깨우는 설정, 삭제 방법, 한계는 [자동 실행 안내](docs/automation.md)). `setup_env.py`로 패키지를 설치해 두었다면 정책 수집도 함께 돕니다.
 
 ## 꼭 알아둘 한계
 

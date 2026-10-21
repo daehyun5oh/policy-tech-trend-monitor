@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """정기 수집 실행기 (docs/automation.md).
 
-뉴스 피드를 받아 누적하고 → 키워드 추출 → 집계 → 검증 → 대시보드 HTML 갱신까지 순서대로 돌린다.
+뉴스 피드와 정책 자료를 받아 → 키워드 추출 → 집계 → 검증 → 대시보드 HTML 갱신까지 순서대로 돌린다.
 Windows 작업 스케줄러가 하루 두 번 부르는 것을 전제로 하지만, 손으로 실행해도 같다.
 
 - 각 단계는 기존 명령줄을 그대로 부른다(`python src/collect_news.py rss` 등). 표준 라이브러리만 쓴다.
 - 수집은 출처마다 요청 1회, 재시도 없음(`collect_news.py`의 규칙). 이 실행기도 재시도하지 않는다.
 - 한 단계가 실패해도 이유를 기록하고 나머지를 계속한다(이미 쌓인 자료로 대시보드는 갱신된다).
 - 실행 기록은 data/logs/ 에 JSON으로 남기고 최근 60개만 둔다. 동시에 두 번 돌지 않도록 잠금 파일을 쓴다.
-- 정책 수집(`collect_policy.py`)은 외부 패키지가 필요해 이 실행기에 넣지 않았다.
+- 정책 수집(`collect_policy.py`, `collect_html.py`)은 외부 패키지(requirements.txt)가 필요하다. 이 실행기 자신은
+  표준 라이브러리만 쓰고, 패키지가 있는 파이썬(저장소의 .venv 또는 지금 파이썬)이 있으면 정책 수집을 함께 돌리고,
+  없으면 정책 수집만 건너뛰고 설치 방법(`python setup_env.py`)을 알려 준다. 뉴스·분석·대시보드는 그대로 돈다.
 
 사용 예:
   python src/run_daily.py              # 전체 실행
   python src/run_daily.py --dry-run    # 실행할 단계만 보여 줌
   python src/run_daily.py --no-collect # 수집은 건너뛰고 이미 쌓인 자료로 분석·대시보드만
+  python src/run_daily.py --no-policy  # 정책 수집은 건너뛴다(뉴스만)
 
 종료 코드: 0 모두 성공 / 1 일부 단계 실패 / 3 이미 실행 중이라 건너뜀
 """
@@ -34,6 +37,10 @@ KEEP_LOGS = 60
 LOCK_STALE_SECONDS = 2 * 60 * 60
 STEP_TIMEOUT_SECONDS = 600
 TAIL = 800
+POLICY_MODULES = ("feedparser", "requests", "bs4", "lxml")
+POLICY_STEPS = ("collect_policy", "collect_html")
+COLLECT_STEPS = ("collect",) + POLICY_STEPS
+POLICY_PYTHON = None  # main()이 정한다. 정책 수집 단계만 이 파이썬으로 실행한다
 
 
 def load_window(sources_path):
@@ -50,14 +57,44 @@ def load_window(sources_path):
     return min(r["collect_from"] for r in rows), max(r["collect_to"] for r in rows)
 
 
-def build_steps(window, collect=True):
-    """실행할 단계 [(이름, 인자 목록)]. 인자는 저장소 루트 기준이다."""
+def venv_python(root=ROOT):
+    """저장소 안 가상환경(.venv)의 파이썬 경로. 없으면 None."""
+    for rel in (".venv/Scripts/python.exe", ".venv/bin/python"):
+        p = Path(root) / rel
+        if p.is_file():
+            return str(p)
+    return None
+
+
+def has_policy_modules(python):
+    """그 파이썬에서 정책 수집기가 쓰는 외부 패키지를 모두 불러올 수 있는가."""
+    try:
+        return subprocess.run([python, "-c", "import " + ",".join(POLICY_MODULES)], capture_output=True,
+                              timeout=60).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def find_policy_python(root=ROOT, check=has_policy_modules):
+    """정책 수집을 돌릴 수 있는 파이썬. 저장소 .venv → 지금 파이썬 순으로 찾고, 없으면 None."""
+    candidates = [venv_python(root), sys.executable]
+    for py in candidates:
+        if py and check(py):
+            return py
+    return None
+
+
+def build_steps(window, collect=True, policy=False):
+    """실행할 단계 [(이름, 인자 목록)]. 인자는 저장소 루트 기준이다. policy=True면 정책 수집 단계를 뉴스 수집 뒤에 넣는다."""
     steps = []
     if collect:
         args = ["src/collect_news.py", "rss"]
         if window[0] and window[1]:
             args += ["--from", window[0], "--to", window[1]]
         steps.append(("collect", args))
+        if policy:
+            steps.append(("collect_policy", ["src/collect_policy.py"]))
+            steps.append(("collect_html", ["src/collect_html.py"]))
     steps += [
         ("extract", ["src/extract_keywords.py"]),
         ("aggregate", ["src/aggregate.py"]),
@@ -72,7 +109,8 @@ def run_step(name, args):
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     started = dt.datetime.now(KST)
     try:
-        proc = subprocess.run([sys.executable] + args, cwd=ROOT, capture_output=True, text=True,
+        py = POLICY_PYTHON if (name in POLICY_STEPS and POLICY_PYTHON) else sys.executable
+        proc = subprocess.run([py] + args, cwd=ROOT, capture_output=True, text=True,
                               encoding="utf-8", errors="replace", timeout=STEP_TIMEOUT_SECONDS, env=env)
         rc, out, err = proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired:
@@ -89,7 +127,7 @@ def run_all(steps, runner=run_step):
     failed = [r["step"] for r in results if r["returncode"] != 0]
     if not failed:
         status = "ok"
-    elif failed == ["collect"] and results[0]["returncode"] == 1:
+    elif all(r["step"] in COLLECT_STEPS and r["returncode"] == 1 for r in results if r["returncode"] != 0):
         status = "partial"  # 일부 출처만 받지 못함. 받은 자료로 나머지는 진행됨
     else:
         status = "failed"
@@ -149,10 +187,22 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="뉴스 수집 → 추출 → 집계 → 검증 → 대시보드를 한 번에 실행한다.")
     ap.add_argument("--dry-run", action="store_true", help="실행할 단계만 보여 주고 아무것도 실행하지 않는다")
     ap.add_argument("--no-collect", action="store_true", help="수집은 건너뛰고 쌓인 자료로 분석·대시보드만 갱신한다")
+    ap.add_argument("--no-policy", action="store_true", help="정책 수집은 건너뛴다(뉴스만)")
     args = ap.parse_args(argv)
 
+    global POLICY_PYTHON
     window = load_window(ROOT / "config" / "sources.csv")
-    steps = build_steps(window, collect=not args.no_collect)
+    policy_note = ""
+    use_policy = False
+    if args.no_collect or args.no_policy:
+        policy_note = "정책 수집 안 함 (요청)"
+    else:
+        POLICY_PYTHON = find_policy_python()
+        use_policy = POLICY_PYTHON is not None
+        policy_note = ("정책 수집 포함 (%s)" % POLICY_PYTHON) if use_policy else (
+            "정책 수집 건너뜀 — 외부 패키지가 없습니다. 정책까지 보려면 `python setup_env.py`를 한 번 실행하세요")
+    steps = build_steps(window, collect=not args.no_collect, policy=use_policy)
+    print(policy_note)
     if args.dry_run:
         print("수집 기간: %s ~ %s" % (window[0] or "제한 없음", window[1] or "제한 없음"))
         for name, a in steps:
@@ -167,7 +217,7 @@ def main(argv=None):
         results, status = run_all(steps)
     finally:
         release_lock()
-    log = {"started_at": now.replace(microsecond=0).isoformat(), "status": status, "window": list(window),
+    log = {"started_at": now.replace(microsecond=0).isoformat(), "status": status, "window": list(window), "policy": policy_note,
            "git": git_info(), "steps": results}
     path = write_log(log)
     for r in results:

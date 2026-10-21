@@ -9,6 +9,7 @@
 | 단계 | 명령 | 하는 일 |
 |---|---|---|
 | collect | `collect_news.py rss --from … --to …` | 뉴스 4곳의 공개 피드를 **출처마다 1회** 요청해 누적 저장소에 쌓고 `documents.csv`를 다시 만든다 |
+| collect_policy, collect_html | `collect_policy.py`, `collect_html.py` | 정책 자료 수집(B의 수집기). **외부 패키지가 있을 때만** 실행한다(아래) |
 | extract | `extract_keywords.py` | 키워드 추출 |
 | aggregate | `aggregate.py` | 일간·주간·월간 집계 |
 | validate | `validate_csv.py --dir … --sources …` | CSV 규격 검사, 뉴스·정책 기간 경고 |
@@ -18,12 +19,13 @@
 - **재시도하지 않는다.** 한 단계가 실패하면 사유를 기록하고 나머지를 계속한다(이미 쌓인 자료로 대시보드는 갱신된다).
 - 실행 기록은 `data/logs/run_daily_<날짜>_<시각>.json`(최근 60개만 보관, Git 제외). 단계별 종료 코드·소요 시간·출력 끝부분과 실행한 코드의 브랜치·커밋이 들어 있다.
 - 동시에 두 번 돌지 않도록 `data/processed/.run_daily.lock`을 쓴다(2시간이 지난 잠금은 무시).
-- 정책 수집(`collect_policy.py`)은 외부 패키지가 필요해 **넣지 않았다.** 정책 자료는 B의 환경에서 같은 방식으로 돌린다.
+- **정책 수집은 패키지가 있을 때만 돈다.** `python setup_env.py`가 저장소 안 `.venv`에 `requirements.txt`를 설치하면, 이 실행기가 `.venv`의 파이썬으로 정책 수집 두 단계를 함께 돌린다(지금 파이썬에 패키지가 있어도 같다). 없으면 정책 단계만 건너뛰고 안내 문구를 출력·기록하며 뉴스·분석·대시보드는 그대로 돈다. `--no-policy`로 직접 끌 수도 있다. 정책 수집이 일부 출처에서 실패하면(종료 코드 1) 뉴스와 같이 `partial`로 기록한다.
 - 종료 코드: 0 모두 성공 / 1 일부 실패 / 3 이미 실행 중이라 건너뜀.
 
 ```bash
 python src/run_daily.py --dry-run     # 실행할 단계만 보기
 python src/run_daily.py --no-collect  # 수집 없이 쌓인 자료로 분석·대시보드만 갱신
+python src/run_daily.py --no-policy   # 정책 수집만 건너뜀(뉴스만)
 ```
 
 ## Windows 작업 스케줄러 등록 (A의 PC)
