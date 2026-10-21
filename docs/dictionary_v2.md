@@ -57,3 +57,5 @@ python src/validate_csv.py --dir data/processed --sources config/sources.csv
 - `cloud` 단독 처리: 정책 쪽 오탐 건수를 B 자료에서 세어 다시 정한다
 - 샘플에서 0건인 키워드를 유지할지 (v1의 §5와 같음)
 - 이 사전은 여전히 초안이다. 정확도·재현율은 측정하지 않았다
+
+> **v3로 올렸다 (2026-10-22).** 정책 용어 보강은 [dictionary_v3.md](dictionary_v3.md)에 있다.

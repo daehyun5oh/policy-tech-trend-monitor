@@ -293,7 +293,7 @@ class ContextPanelModelTest(unittest.TestCase):
 
     def test_meta_is_loaded_and_embedded(self):
         meta = app.load_meta(ROOT / "config" / "keyword_meta.csv")
-        self.assertEqual(len(meta), 48)
+        self.assertEqual(len(meta), 49)
         self.assertEqual(meta["K001"]["c"], "AI·모델")
         m = app.build_model(app.read_csv(CTX / "documents.csv"), app.read_csv(CTX / "document_keywords.csv"), [], meta=meta)
         self.assertEqual(m["meta"]["K001"]["d"], meta["K001"]["d"])
