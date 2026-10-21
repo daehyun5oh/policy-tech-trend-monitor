@@ -1,5 +1,12 @@
 # 뉴스·정책 기술키워드 모니터
 
+> **배포 주소(GitHub Pages, 합성 샘플 데모)**
+> - 소유자(hyeon0): https://hyeon0.github.io/policy-tech-trend-monitor/
+> - 팀원(daehyun5oh, fork 배포): *(fork에서 Pages를 켠 뒤 주소를 여기에 적는다)*
+>
+> **수업일(2026-10-17) 마지막 병합 이후 바뀐 것**: [비교 링크](https://github.com/hyeon0/policy-tech-trend-monitor/compare/3965f54059d32a17cbb2d843dc188f0063b8e86f...main)
+
+
 뉴스와 정부 발표를 모아, **어떤 기술 용어가 몇 건의 글에서 언급됐는지** 기간별로 세어 줍니다.
 
 | | |
