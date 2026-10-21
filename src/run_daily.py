@@ -11,12 +11,14 @@ Windows 작업 스케줄러가 하루 두 번 부르는 것을 전제로 하지�
 - 정책 수집(`collect_policy.py`, `collect_html.py`)은 외부 패키지(requirements.txt)가 필요하다. 이 실행기 자신은
   표준 라이브러리만 쓰고, 패키지가 있는 파이썬(저장소의 .venv 또는 지금 파이썬)이 있으면 정책 수집을 함께 돌리고,
   없으면 정책 수집만 건너뛰고 설치 방법(`python setup_env.py`)을 알려 준다. 뉴스·분석·대시보드는 그대로 돈다.
+- 정책은 뉴스보다 갱신이 느려 **하루 한 번만** 수집한다. 오늘(한국 시각) 이미 정책 수집을 한 기록이 있으면 건너뛴다.
 
 사용 예:
   python src/run_daily.py              # 전체 실행
   python src/run_daily.py --dry-run    # 실행할 단계만 보여 줌
   python src/run_daily.py --no-collect # 수집은 건너뛰고 이미 쌓인 자료로 분석·대시보드만
   python src/run_daily.py --no-policy  # 정책 수집은 건너뛴다(뉴스만)
+  python src/run_daily.py --policy-every-run  # 정책 수집을 하루 한 번으로 줄이지 않고 매번 한다
 
 종료 코드: 0 모두 성공 / 1 일부 단계 실패 / 3 이미 실행 중이라 건너뜀
 """
@@ -82,6 +84,21 @@ def find_policy_python(root=ROOT, check=has_policy_modules):
         if py and check(py):
             return py
     return None
+
+
+def policy_collected_on(day, log_dir=LOG_DIR):
+    """실행 기록에 day(YYYY-MM-DD, 한국 시각)에 정책 수집을 실제로 한 흔적이 있는가. 실행 자체를 못 한 단계(127 등)는 세지 않는다."""
+    for p in sorted(Path(log_dir).glob("run_daily_*.json")):
+        try:
+            log = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if str(log.get("started_at", ""))[:10] != day:
+            continue
+        for s in log.get("steps", []):
+            if s.get("step") in POLICY_STEPS and s.get("returncode") in (0, 1):
+                return True
+    return False
 
 
 def build_steps(window, collect=True, policy=False):
@@ -188,6 +205,7 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="실행할 단계만 보여 주고 아무것도 실행하지 않는다")
     ap.add_argument("--no-collect", action="store_true", help="수집은 건너뛰고 쌓인 자료로 분석·대시보드만 갱신한다")
     ap.add_argument("--no-policy", action="store_true", help="정책 수집은 건너뛴다(뉴스만)")
+    ap.add_argument("--policy-every-run", action="store_true", help="정책 수집을 하루 한 번으로 줄이지 않고 실행할 때마다 한다")
     args = ap.parse_args(argv)
 
     global POLICY_PYTHON
@@ -201,6 +219,10 @@ def main(argv=None):
         use_policy = POLICY_PYTHON is not None
         policy_note = ("정책 수집 포함 (%s)" % POLICY_PYTHON) if use_policy else (
             "정책 수집 건너뜀 — 외부 패키지가 없습니다. 정책까지 보려면 `python setup_env.py`를 한 번 실행하세요")
+        today = dt.datetime.now(KST).strftime("%Y-%m-%d")
+        if use_policy and not args.policy_every_run and policy_collected_on(today):
+            use_policy = False
+            policy_note = "정책 수집 건너뜀 — 오늘(%s) 이미 수집했습니다(하루 한 번). 매번 하려면 --policy-every-run" % today
     steps = build_steps(window, collect=not args.no_collect, policy=use_policy)
     print(policy_note)
     if args.dry_run:
