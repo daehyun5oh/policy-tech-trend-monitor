@@ -86,6 +86,39 @@ def load_meta(path):
             for r in rows if cell(r, "keyword_id")}
 
 
+def load_countries(path):
+    """sources.csv 에서 {출처 이름: 국가 코드(KR·US·CN …)}를 읽는다. 파일이 없으면 빈 dict."""
+    try:
+        rows = read_csv(path)
+    except OSError:
+        return {}
+    return {cell(r, "source_name"): cell(r, "country") for r in rows if cell(r, "source_name") and cell(r, "country")}
+
+
+def stats_rows_for(members, kids_by_doc, occurrences, names):
+    """문서 목록에서 `keyword_stats.csv` 한 묶음과 같은 모양의 행(순위순)을 만든다. 정의는 `aggregate.py`와 같다.
+
+    비율 = 문서 수 ÷ 문서 목록 길이 × 100(소수 둘째 자리). 순위는 문서 수가 같으면 같은 순위이고 다음 순위는 건너뛴다.
+    같은 순위 안에서는 키워드 이름순이다.
+    """
+    total = len(members)
+    dc, oc = defaultdict(int), defaultdict(int)
+    for doc in members:
+        did = cell(doc, "document_id")
+        for kid in kids_by_doc.get(did, ()):
+            dc[kid] += 1
+            oc[kid] += occurrences.get((did, kid), 0)
+    ordered = sorted(dc, key=lambda k: (-dc[k], names.get(k, k)))
+    rows, prev_rank, prev_dc = [], 0, None
+    for i, kid in enumerate(ordered, start=1):
+        rank = prev_rank if dc[kid] == prev_dc else i
+        prev_rank, prev_dc = rank, dc[kid]
+        rows.append({"keyword_id": kid, "keyword": names.get(kid, kid), "document_count": str(dc[kid]),
+                     "occurrence_count": str(oc[kid]), "total_documents": str(total),
+                     "document_share": "%.2f" % round(dc[kid] / total * 100, 2), "rank": str(rank)})
+    return rows
+
+
 def pct(num, den):
     return "%.2f" % (num / den * 100)
 
@@ -129,7 +162,7 @@ def compute_context(members, kids_by_doc, names, terms_by_doc):
 
 
 # ---- 인사이트 화면(docs/insight_views.md) 계산 ----------------------------------------
-BASELINE_K = {"daily": 7, "weekly": 4, "monthly": 3}  # 기준 기간 개수(이전의 분석 문서가 있는 기간)
+BASELINE_K = {"daily": 7, "weekly": 4, "monthly": 3, "range": 1}  # 기준 기간 개수(이전의 분석 문서가 있는 기간)
 MIN_CUR_DOCS = 5        # 이번 기간 문서가 이보다 적으면 비교하지 않는다
 MIN_BASE_DOCS = 20      # 기준 기간 문서 합이 이보다 적으면 비교하지 않는다
 MIN_COUNT = 2           # 비중이 커진 키워드로 올리려면 이번 기간 문서가 이 이상
@@ -140,6 +173,9 @@ BACKGROUND_SHARE = 0.4  # 전체 기간 문서의 이 비율 이상에 나오면
 BACKGROUND_MIN_DOCS = 20
 MIX_WARN_PP = 15.0      # 출처별 문서 비중이 이만큼(%p) 달라지면 출처 구성 경고
 TOP_N = 10
+COUNTRY_LABELS = {"KR": "한국", "US": "미국", "CN": "중국"}
+COUNTRY_TOP = 15        # 국가별 보기에서 나라마다 싣는 키워드 수
+DOC_LIST_MAX = 150      # 정책 문서 목록에 싣는 최대 문서 수
 
 SCOPE_ORDER = ("title", "title_summary", "title_body")
 
@@ -326,8 +362,14 @@ def date_range(first, last):
     return out
 
 
-def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, generated_at=None, hidden_sources=frozenset(), meta=None):
-    """CSV 행 목록으로 화면에 필요한 모든 값을 미리 계산한 dict를 만든다."""
+def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, generated_at=None, hidden_sources=frozenset(), meta=None,
+                countries=None, range_period=None):
+    """CSV 행 목록으로 화면에 필요한 모든 값을 미리 계산한 dict를 만든다.
+
+    `range_period=(시작일, 종료일)`을 주면 그 조회 기간 전체를 하나의 기간(`range`)으로 더한다(없으면 분석한 문서의 첫날~마지막 날).
+    `range` 기간의 순위·건수는 집계 CSV에 없어 같은 정의(`stats_rows_for`)로 대시보드가 문서 목록에서 센다.
+    `countries`({출처 이름: 국가 코드})를 주면 정책 화면에 국가별 키워드 집계와 문서 목록을 싣는다.
+    """
     analyzed, excluded = [], []
     failed = {t: 0 for t in SOURCE_TYPES}
     undated = {t: 0 for t in SOURCE_TYPES}
@@ -349,7 +391,7 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
             excluded.append((day, r))
     analyzed.sort(key=lambda x: (-x[0].toordinal(), cell(x[1], "document_id")))
 
-    spans = {"daily": set(), "weekly": set(), "monthly": set()}
+    spans = {"daily": set(), "weekly": set(), "monthly": set(), "range": set()}
     for r in stats_rows:
         if cell(r, "period_type") in spans:
             spans[cell(r, "period_type")].add((cell(r, "period_start"), cell(r, "period_end")))
@@ -357,6 +399,9 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
         spans["weekly"].add(tuple(x.isoformat() for x in week_of(day)))
         spans["monthly"].add(tuple(x.isoformat() for x in month_of(day)))
     latest = max(collected) if collected else ""
+    if analyzed:
+        first_day, last_day = range_period or (min(d for d, _ in analyzed).isoformat(), max(d for d, _ in analyzed).isoformat())
+        spans["range"] = {(first_day, last_day)}
     # 일간은 집계 CSV에 daily 행이 있을 때만 쓴다(없으면 빈 결과로 오해하게 되므로 숨긴다).
     # 문서가 없는 날도 '분석한 문서가 없음'으로 보이도록 첫 날부터 마지막 수집일까지 빈틈없이 만든다.
     if spans["daily"]:
@@ -370,6 +415,8 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
                for r in stats_rows if cell(r, "is_partial_period")}
 
     def is_partial(pt, s, e):
+        if pt == "range":
+            return False  # 조회 기간 전체는 사용자가 정한 기간이라 부분 기간으로 보지 않는다
         if (pt, s) in flagged:
             return flagged[(pt, s)]
         # 수집 종료일이 기간 안에 있거나 기간이 그 뒤까지 이어지면 진행 중인 기간이다 (data_dictionary.md §6).
@@ -382,16 +429,23 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
     for r in stats_rows:
         by_group[(cell(r, "period_type"), cell(r, "period_start"), cell(r, "source_type"))].append(r)
     kids_by_doc = defaultdict(set)
-    names, terms_by_doc = {}, {}
+    names, terms_by_doc, occurrences = {}, {}, {}
     for r in keyword_rows:
         kids_by_doc[cell(r, "document_id")].add(cell(r, "keyword_id"))
         names[cell(r, "keyword_id")] = cell(r, "keyword")
+        occurrences[(cell(r, "document_id"), cell(r, "keyword_id"))] = vc.to_int(cell(r, "occurrences")) or 0
         try:
             terms = json.loads(cell(r, "matched_terms") or "[]")
         except ValueError:
             terms = []
         terms_by_doc[(cell(r, "document_id"), cell(r, "keyword_id"))] = [t for t in terms if isinstance(t, str)]
 
+    for rs_, re_ in spans["range"]:
+        for tid, _ in TYPES:
+            group = [m[1] for m in analyzed if rs_ <= m[0].isoformat() <= re_ and (tid == "all" or cell(m[1], "source_type") == tid)]
+            by_group[("range", rs_, tid)] = stats_rows_for(group, kids_by_doc, occurrences, names)
+
+    countries = countries or {}
     kid_cat = {k: m["c"] for k, m in (meta or {}).items() if m.get("c")}
     doc_list, doc_index = [], {}
 
@@ -400,7 +454,8 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
         if did not in doc_index:
             doc_index[did] = len(doc_list)
             doc_list.append({"t": cell(row, "title"), "d": cell(row, "published_date"),
-                             "s": cell(row, "source_name"), "u": cell(row, "original_url") if vc.is_http_url(cell(row, "original_url")) else "",
+                             "s": cell(row, "source_name"), "g": countries.get(cell(row, "source_name"), ""),
+                             "k": sorted(names.get(k, k) for k in kids_by_doc.get(did, ())), "u": cell(row, "original_url") if vc.is_http_url(cell(row, "original_url")) else "",
                              "y": cell(row, "source_type")})
             if cell(row, "source_name") in hidden_sources:
                 doc_list[-1]["t"] = ""  # 제목은 모델(HTML)에 싣지 않는다
@@ -424,7 +479,20 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
                 for _, doc in members:
                     for kid in sorted(kids_by_doc.get(cell(doc, "document_id"), frozenset()) & wanted):
                         evidence[kid].append(index_of(doc))
-                views["%s|%s|%s" % (pt, start, tid)] = {
+                extra = {}
+                if tid == "policy":
+                    # 국가별 키워드 집계와 문서 목록(정책 화면 전용). 국가는 sources.csv 의 country 로 정한다.
+                    by_country = defaultdict(list)
+                    for _, doc in members:
+                        by_country[countries.get(cell(doc, "source_name"), "")].append(doc)
+                    ctry = {}
+                    for code in sorted(by_country, key=lambda c: (list(COUNTRY_LABELS).index(c) if c in COUNTRY_LABELS else len(COUNTRY_LABELS), c)):
+                        crows = stats_rows_for(by_country[code], kids_by_doc, occurrences, names)
+                        ctry[code or "?"] = {"label": COUNTRY_LABELS.get(code, code or "미상"), "N": len(by_country[code]),
+                                             "stats": [{"id": r["keyword_id"], "kw": r["keyword"], "dc": int(r["document_count"]),
+                                                        "share": r["document_share"], "rank": r["rank"]} for r in crows[:COUNTRY_TOP]]}
+                    extra = {"ctry": ctry, "dl": [index_of(doc) for _, doc in members[:DOC_LIST_MAX]]}
+                views["%s|%s|%s" % (pt, start, tid)] = dict(extra, **{
                     "analyzed": len(members),
                     "excluded": sum(1 for m in excluded if inside(m)),
                     "csvTotal": (vc.to_int(cell(rows[0], "total_documents")) if rows else None),
@@ -433,7 +501,7 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
                     "ctx": compute_context([m[1] for m in members], kids_by_doc, names, terms_by_doc),
                     "scope": scope_by_source([m[1] for m in members]),
                     "cat": category_counts([m[1] for m in members], kids_by_doc, kid_cat),
-                }
+                })
     apply_streaks(views, periods)
     build_changes(views, periods, names)
     build_gaps(views, periods)
@@ -460,6 +528,9 @@ def build_model(documents, keyword_rows, stats_rows, title=DEFAULT_TITLE, genera
         "meta": meta or {},
         "background": background_keywords(analyzed, kids_by_doc),
         "categories": sorted(set(kid_cat.values())),
+        "countryLabels": COUNTRY_LABELS,
+        "sources": {cell(r, "source_name"): {"y": cell(r, "source_type"), "g": countries.get(cell(r, "source_name"), "")}
+                    for _, r in analyzed},
     }
 
 
@@ -490,6 +561,8 @@ def main(argv=None):
     p.add_argument("--meta", default=str(META_FILE), help="키워드 설명·분야 (기본 config/keyword_meta.csv). 없으면 설명 없이 표시")
     p.add_argument("--no-validate", action="store_true", help="입력 CSV 규격 검사를 건너뜀")
     p.add_argument("--open", action="store_true", help="만든 뒤 기본 브라우저로 연다")
+    p.add_argument("--range-from", help="조회 기간 시작일 YYYY-MM-DD (기본: 분석한 문서의 첫 날)")
+    p.add_argument("--range-to", help="조회 기간 종료일 YYYY-MM-DD (기본: 분석한 문서의 마지막 날)")
     args = p.parse_args(argv)
     base = Path(args.dir)
     documents = args.documents or str(base / "documents.csv")
@@ -505,7 +578,9 @@ def main(argv=None):
                 print("입력 CSV에 오류가 %d건 있어 대시보드를 만들지 않았습니다. (--no-validate로 건너뛸 수 있음)" % len(report.errors), file=sys.stderr)
                 return 1
         model = build_model(read_csv(documents), read_csv(keywords), read_csv(stats), title=args.title,
-                            hidden_sources=load_hidden_sources(args.sources), meta=load_meta(args.meta))
+                            hidden_sources=load_hidden_sources(args.sources), meta=load_meta(args.meta),
+                            countries=load_countries(args.sources),
+                            range_period=(args.range_from, args.range_to) if args.range_from and args.range_to else None)
     except OSError as e:
         print("오류: %s" % e, file=sys.stderr)
         return 2

@@ -98,7 +98,7 @@ def build_steps(period, workdir, policy):
         ("aggregate", ["src/aggregate.py", "--documents", view + "/documents.csv", "--keywords", view + "/document_keywords.csv",
                        "--out", view + "/keyword_stats.csv"]),
         ("validate", ["src/validate_csv.py", "--dir", view, "--sources", "config/sources.csv"]),
-        ("dashboard", ["dashboard/app.py", "--dir", view, "--out", view + "/dashboard.html"]),
+        ("dashboard", ["dashboard/app.py", "--dir", view, "--out", view + "/dashboard.html", "--range-from", f, "--range-to", t]),
     ]
 
 
