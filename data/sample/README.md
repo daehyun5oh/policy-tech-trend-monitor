@@ -11,7 +11,6 @@ API 키나 네트워크 없이 파이프라인을 끝까지 돌려보기 위한 
 | `policy_sample_input.csv` | 문서 7행 | 정상 5건 + 발행일 없는 1건 + 중복 1건 |
 | `document_keywords_sample.csv` | 문서-키워드 6행 | **키워드 추출(이슈 #11, 담당 A)의 대역** |
 | `sources_sample.csv` | 출처 3곳 | `샘플해외기관` 은 `local_only_no_publish` |
-| `geeknews_2026-09_input.csv` | 뉴스 목록 1,417행 | A가 추가. 이용 조건 미확인 상태 (`docs/source_policy.md` §4) |
 
 ## 샘플에 일부러 섞어 둔 경우
 

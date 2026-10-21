@@ -59,8 +59,13 @@ class CollectNewsTest(unittest.TestCase):
 
     def test_output_passes_csv_validator(self):
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(cn.main(["csv", str(ROOT / "data/sample/geeknews_2026-09_input.csv"),
-                                      "--from", "2026-09-01", "--to", "2026-09-30", "--out-dir", tmp]), 0)
+            src = Path(tmp) / "list.csv"   # 합성 목록(주소는 sample.example)
+            rows = ["date,title,url",
+                    "2026-09-03,인공지능 반도체 투자 확대,https://sample.example/n/1",
+                    "2026-09-15,클라우드 보안 가이드라인,https://sample.example/n/2",
+                    "2026-10-02,기간 밖 기사,https://sample.example/n/3"]
+            src.write_text("\n".join(rows) + "\n", encoding="utf-8")
+            self.assertEqual(cn.main(["csv", str(src), "--from", "2026-09-01", "--to", "2026-09-30", "--out-dir", tmp]), 0)
             report = vc.run(documents=Path(tmp) / "documents.csv")
             self.assertEqual(report.errors, [])
 
