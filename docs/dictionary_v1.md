@@ -107,3 +107,5 @@
 | `source_document_id`, `original_url` | 샘플의 `url` |
 | `title`, `published_date` | 샘플의 `title`, `date` |
 | `analysis_scope`, `status` | `title`, `analyzed` |
+
+> **v2로 올렸다 (2026-10-21).** 변경 내용과 반영하지 않은 후보는 [dictionary_v2.md](dictionary_v2.md)에 있다. 이 문서는 v1의 구성과 근거 기록이다.
