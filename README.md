@@ -15,6 +15,11 @@
 
 ---
 
+## 데모로 먼저 보기
+
+- 샘플 데이터로 만든 데모 대시보드: [`docs/index.html`](docs/index.html) (GitHub Pages로 공개하면 `https://<사용자>.github.io/policy-tech-trend-monitor/`). 제목·출처·숫자는 모두 지어낸 합성 자료이며 `python src/build_demo.py`로 다시 만듭니다.
+- 공개 전 점검 기록: [docs/public_release_check.md](docs/public_release_check.md)
+
 ## 5분 따라 하기 (인터넷 없이 됩니다)
 
 Python 3.10 이상만 있으면 됩니다. 저장소를 내려받은 폴더에서 차례로 실행하세요.

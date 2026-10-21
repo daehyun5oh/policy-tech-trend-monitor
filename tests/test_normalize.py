@@ -111,13 +111,13 @@ class CleanTextTest(unittest.TestCase):
 
     def test_clean_text_strips_phone_numbers(self):
         """담당자 연락처를 지운다 (기획안 §11)."""
-        out = nz.clean_text("문의 044-202-4532 기초연구진흥과")
-        self.assertNotIn("044-202-4532", out)
+        out = nz.clean_text("문의 044-000-1234 기초연구진흥과")
+        self.assertNotIn("044-000-1234", out)
         self.assertIn("기초연구진흥과", out)
 
     def test_clean_text_keeps_phone_when_disabled(self):
-        out = nz.clean_text("문의 044-202-4532", strip_phone=False)
-        self.assertIn("044-202-4532", out)
+        out = nz.clean_text("문의 044-000-1234", strip_phone=False)
+        self.assertIn("044-000-1234", out)
 
     def test_clean_text_drops_script_and_style(self):
         raw = "<style>p{color:red}</style>본문<script>alert(1)</script>"
