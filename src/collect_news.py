@@ -22,7 +22,7 @@
 사용 예:
   python src/collect_news.py rss --from 2026-10-01 --to 2026-10-31
   python src/collect_news.py rss --sources news-002,news-004
-  python src/collect_news.py csv data/sample/geeknews_2026-09_input.csv --from 2026-09-01 --to 2026-09-30
+  python src/collect_news.py csv 목록.csv --from 2026-09-01 --to 2026-09-30   # 열: date,title,url
 
 종료 코드: 0 정상 / 1 수집 실패(피드를 받지 못한 출처가 있음) / 2 입력 오류
 """
