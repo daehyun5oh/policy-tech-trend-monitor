@@ -121,6 +121,35 @@ class PolicyStepsTest(unittest.TestCase):
         self.assertEqual(rd.run_all(steps, fake({"collect_html": 1, "extract": 1}))[1], "failed")
 
 
+class PolicyOncePerDayTest(unittest.TestCase):
+    def write_log(self, d, started, steps):
+        stamp = started.replace("-", "").replace("T", "_").replace(":", "")[:15]
+        (Path(d) / ("run_daily_%s.json" % stamp)).write_text(
+            json.dumps({"started_at": started, "steps": [{"step": n, "returncode": rc} for n, rc in steps]}), encoding="utf-8")
+
+    def test_a_policy_step_run_today_counts(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.write_log(d, "2026-10-21T09:00:05+09:00", [("collect", 0), ("collect_policy", 0), ("collect_html", 1)])
+            self.assertTrue(rd.policy_collected_on("2026-10-21", d))
+
+    def test_another_day_or_a_news_only_run_does_not_count(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.write_log(d, "2026-10-20T21:00:05+09:00", [("collect", 0), ("collect_policy", 0)])   # 어제
+            self.write_log(d, "2026-10-21T09:00:05+09:00", [("collect", 0), ("extract", 0)])        # 오늘이지만 뉴스만
+            self.assertFalse(rd.policy_collected_on("2026-10-21", d))
+
+    def test_a_policy_step_that_could_not_even_start_does_not_count(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.write_log(d, "2026-10-21T09:00:05+09:00", [("collect_policy", 127), ("collect_html", 124)])
+            self.assertFalse(rd.policy_collected_on("2026-10-21", d))
+
+    def test_missing_folder_and_broken_logs_are_ignored(self):
+        self.assertFalse(rd.policy_collected_on("2026-10-21", Path("없는/폴더")))
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "run_daily_20261021_090000.json").write_text("{깨짐", encoding="utf-8")
+            self.assertFalse(rd.policy_collected_on("2026-10-21", d))
+
+
 class LockTest(unittest.TestCase):
     def test_second_run_is_refused_while_the_lock_is_fresh(self):
         with tempfile.TemporaryDirectory() as tmp:
