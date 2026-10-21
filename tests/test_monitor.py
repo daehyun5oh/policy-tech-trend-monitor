@@ -49,6 +49,8 @@ class StepsTest(unittest.TestCase):
         self.assertEqual(d["collect_html"][1:5], ["--from", "2026-10-14", "--to", "2026-10-21"])
         self.assertEqual(d["collect_policy"][-2:], ["--data-dir", "W"])
         self.assertEqual([n for n, _ in view], ["aggregate", "validate", "dashboard"])
+        # 대시보드는 입력한 조회 기간 전체를 하나의 보기로 만든다
+        self.assertEqual(dict(view)["dashboard"][-4:], ["--range-from", "2026-10-14", "--range-to", "2026-10-21"])
         no_policy = mo.build_steps((D(2026, 10, 14), D(2026, 10, 21)), "W", policy=False)[0]
         self.assertEqual([n for n, _ in no_policy], ["collect", "extract"])
 
