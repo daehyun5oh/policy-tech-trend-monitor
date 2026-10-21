@@ -561,6 +561,7 @@ def main(argv=None):
     p.add_argument("--meta", default=str(META_FILE), help="키워드 설명·분야 (기본 config/keyword_meta.csv). 없으면 설명 없이 표시")
     p.add_argument("--no-validate", action="store_true", help="입력 CSV 규격 검사를 건너뜀")
     p.add_argument("--open", action="store_true", help="만든 뒤 기본 브라우저로 연다")
+    p.add_argument("--notice", help="화면 맨 위에 띄울 안내 문구(데모 표시 등)")
     p.add_argument("--range-from", help="조회 기간 시작일 YYYY-MM-DD (기본: 분석한 문서의 첫 날)")
     p.add_argument("--range-to", help="조회 기간 종료일 YYYY-MM-DD (기본: 분석한 문서의 마지막 날)")
     args = p.parse_args(argv)
@@ -584,6 +585,8 @@ def main(argv=None):
     except OSError as e:
         print("오류: %s" % e, file=sys.stderr)
         return 2
+    if args.notice:
+        model["notice"] = args.notice
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(model), encoding="utf-8")
     print("대시보드 생성: %s (기간 %d개, 화면 %d개)" % (out, sum(len(v) for v in model["periods"].values()), len(model["views"])))

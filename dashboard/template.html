@@ -35,6 +35,7 @@ button, select { font: inherit; color: inherit; }
 .masthead { max-width: 1240px; margin: 0 auto; padding: 24px 24px 4px; }
 .masthead h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.015em; }
 .masthead p { margin: 0; max-width: 70ch; color: var(--muted); }
+.notice { margin: 0; padding: 8px 24px; text-align: center; font-size: 0.9rem; color: var(--ink); background: var(--partial-bg); border-bottom: 1px solid var(--rule); }
 .filters { position: sticky; top: 0; z-index: 5; background: var(--paper); border-bottom: 1px solid var(--rule); }
 .filters .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 20px; max-width: 1240px; margin: 0 auto; padding: 10px 24px; }
 .filters fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
@@ -210,6 +211,7 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
   <h1>__TITLE__</h1>
   <p>수집한 뉴스·정책 자료에서 기술키워드가 언급된 문서를 세어, 무엇이 많이 언급됐는지와 평소와 무엇이 달라졌는지를 한 화면에 보여 줍니다. 언급량일 뿐 기술의 중요도나 전망을 뜻하지 않습니다.</p>
 </header>
+<p class="notice" id="notice" hidden></p>
 <div class="filters" role="search" aria-label="조회 조건">
   <div class="row">
     <fieldset><legend>기간 단위</legend><div class="seg" id="ptSeg"></div></fieldset>
@@ -1173,6 +1175,7 @@ th small { display: block; font-weight: 400; font-size: 0.72rem; }
       $('status').appendChild(el('p', 'note alert', '기간 집계에 쓸 수 있는 분석 문서가 없습니다. documents.csv의 status, published_date를 확인하세요.'));
       return;
     }
+    if (M.notice) { $('notice').textContent = M.notice; $('notice').hidden = false; }
     renderControls(); renderStatus(); renderOverview(); renderRanks(); renderSide(); renderCountry(); renderDocs(); renderChange(); renderGap(); renderCat(); renderTrend();
     $('secGap').hidden = state.type !== 'all';
     $('secTrend').className = 'card ' + (state.pt === 'range' ? '' : 's6');
