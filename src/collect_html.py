@@ -479,7 +479,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-bodies", action="store_true",
                     help="상세 페이지를 받지 않는다. 목록만 확인할 때 쓴다")
     ap.add_argument("--dry-run", action="store_true", help="대상만 보여주고 요청하지 않는다")
+    ap.add_argument("--from", dest="date_from", help="수집 시작일 YYYY-MM-DD. 기본값은 sources.csv")
+    ap.add_argument("--to", dest="date_to", help="수집 종료일 YYYY-MM-DD. 기본값은 sources.csv")
+    ap.add_argument("--data-dir", help="raw/ 와 processed/ 를 둘 폴더. 기본은 저장소의 data/")
     args = ap.parse_args(argv)
+
+    if args.data_dir:  # 다른 폴더에 쓰고 읽는다(monitor.py 의 작업 폴더). 기본은 저장소의 data/
+        global RAW_DIR, PROCESSED_DIR, DOCUMENTS_CSV
+        RAW_DIR = Path(args.data_dir) / "raw"
+        PROCESSED_DIR = Path(args.data_dir) / "processed"
+        DOCUMENTS_CSV = PROCESSED_DIR / "documents.csv"
 
     sources = load_sources(args.source_id)
     if not sources:
@@ -506,8 +515,8 @@ def main(argv: list[str] | None = None) -> int:
 
     all_docs, logs = [], []
     for s in sources:
-        window = (s.get("collect_from") or "0001-01-01",
-                  s.get("collect_to") or "9999-12-31")
+        window = (args.date_from or s.get("collect_from") or "0001-01-01",
+                  args.date_to or s.get("collect_to") or "9999-12-31")
         print(f"\n[{s['source_id']}] {s['source_name']}  기간 {window[0]} ~ {window[1]}")
         docs, log = collect_html(s, window, args.delay, args.limit,
                                  fetch_bodies=not args.no_bodies,

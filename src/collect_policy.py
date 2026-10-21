@@ -191,7 +191,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--limit", type=int, help="출처당 처리할 항목 수 상한")
     ap.add_argument("--delay", type=float, default=1.0, help="요청 간 대기 시간(초). 기본 1.0")
     ap.add_argument("--dry-run", action="store_true", help="수집 대상만 보여주고 요청하지 않는다")
+    ap.add_argument("--data-dir", help="raw/ 와 processed/ 를 둘 폴더. 기본은 저장소의 data/")
     args = ap.parse_args(argv)
+    if args.data_dir:  # 다른 폴더에 쓰고 읽는다(monitor.py 의 작업 폴더). 기본은 저장소의 data/
+        global RAW_DIR, PROCESSED_DIR, DOCUMENTS_CSV
+        RAW_DIR = Path(args.data_dir) / "raw"
+        PROCESSED_DIR = Path(args.data_dir) / "processed"
+        DOCUMENTS_CSV = PROCESSED_DIR / "documents.csv"
 
     sources = load_sources(args.source_id)
     if not sources:

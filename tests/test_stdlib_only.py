@@ -11,14 +11,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 STDLIB_ONLY = [
     "src/schema.py", "src/extract_keywords.py", "src/validate_csv.py", "src/collect_news.py", "src/run_daily.py",
-    "dashboard/app.py", "setup_env.py",
+    "dashboard/app.py", "setup_env.py", "monitor.py",
 ]
 # B 담당 모듈은 아직 main 에 없을 수 있어(PR이 순서대로 들어옴) 파일이 있을 때만 검사한다.
 STDLIB_ONLY_IF_PRESENT = [
     "src/normalize.py", "src/aggregate.py", "src/generate_report.py", "src/pipeline.py",
 ]
 LOCAL = {"schema", "validate_csv", "extract_keywords", "collect_news", "app",  # 이 저장소의 모듈
-         "normalize", "aggregate", "generate_report", "pipeline", "collect_policy", "collect_html", "run_daily", "setup_env"}
+         "normalize", "aggregate", "generate_report", "pipeline", "collect_policy", "collect_html", "run_daily", "setup_env", "monitor"}
 
 
 def imported_top_level(path):
