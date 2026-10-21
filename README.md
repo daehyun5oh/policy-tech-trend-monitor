@@ -217,3 +217,7 @@ Register-ScheduledTask -TaskName PolicyTechTrendMonitor-Collect -Action $act -Tr
 | 화면의 각 보기가 무슨 뜻인지 | [화면 설명](docs/insight_views.md) |
 | 설치·환경 문제 | [환경 안내](docs/environment.md) |
 | 함께 작업하는 규칙 | [CLAUDE.md](CLAUDE.md) |
+
+## 라이선스
+
+코드와 문서는 [MIT 라이선스](LICENSE)입니다. **수집한 기사·정책 자료는 이 저장소에 포함되어 있지 않으며** 라이선스 대상도 아닙니다. 자료를 수집할 때는 각 출처의 이용 조건을 직접 확인하고 따라야 합니다(`docs/source_policy.md`, `config/sources.csv`).
