@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font: 14px system-ui, sans-serif; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<title>기술키워드 모니터 30초</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">
+<style>
+  /* 레이아웃: 16:9 무대에 대시보드 실제 화면 4장을 차례로 띄우고, 설명 카드를 아래에 겹친다 */
+  :root {
+    --ink: #10151c;
+    --paper: #eceef2;
+    --surface: #ffffff;
+    --line: #c9cfd8;
+    --muted: #5b6676;
+    --signal: #1f6f7a;
+    --signal-soft: #d6e8ea;
+    --warn: #a2462f;
+    --veil: rgba(10, 16, 22, .82);
+    --display: "Gowun Batang", "Nanum Myeongjo", serif;
+    --body: "IBM Plex Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e8ecf2; --paper: #0e1319; --surface: #161d26; --line: #2b3542;
+      --muted: #9aa7b6; --signal: #67c3cf; --signal-soft: #17323a; --warn: #e0876b;
+      --veil: rgba(6, 10, 14, .86);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e8ecf2; --paper: #0e1319; --surface: #161d26; --line: #2b3542;
+    --muted: #9aa7b6; --signal: #67c3cf; --signal-soft: #17323a; --warn: #e0876b;
+    --veil: rgba(6, 10, 14, .86);
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+
+  .stage {
+    position: relative; width: 100%; max-width: 980px; aspect-ratio: 16 / 9;
+    background: #0b1016; border: 1px solid var(--line); border-radius: 4px;
+    overflow: hidden; container-type: inline-size;
+  }
+
+  .scene { position: absolute; inset: 0; opacity: 0; transition: opacity .5s ease; }
+  .scene.on { opacity: 1; }
+
+  .shot { position: absolute; inset: 0; overflow: hidden; }
+  .shot img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: top center;
+    transform: scale(1.03); transition: transform 10s linear;
+  }
+  .scene.on .shot img { transform: scale(1.12) translateY(-2%); }
+
+  /* 화면 위에서 설명할 부분을 네모로 짚어 준다 */
+  .mark {
+    position: absolute; border: .28cqw solid var(--signal);
+    border-radius: 3px; box-shadow: 0 0 0 100vmax rgba(8, 12, 18, .28);
+    opacity: 0; transition: opacity .6s ease .3s;
+  }
+  .scene.on .mark { opacity: 1; }
+
+  .caption {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 3cqw 4cqw 3.4cqw;
+    background: linear-gradient(to top, var(--veil) 72%, transparent);
+    color: #f2f5f8;
+    display: flex; flex-direction: column; gap: .8cqw;
+  }
+  .step { font-size: 1.5cqw; letter-spacing: .16em; color: #9fc6cc; font-weight: 500; }
+  .caption h2 {
+    font-family: var(--display); font-weight: 700; margin: 0;
+    font-size: 3.6cqw; line-height: 1.25; text-wrap: balance;
+  }
+  .caption p { margin: 0; font-size: 1.85cqw; line-height: 1.55; color: #cfd8e0; font-weight: 300; max-width: 60ch; }
+  .caption b { color: #fff; font-weight: 600; }
+
+  /* 마지막 장면 */
+  .outro {
+    position: absolute; inset: 0; background: var(--surface);
+    padding: 6cqw 7cqw; display: flex; flex-direction: column; justify-content: center; gap: 1.6cqw;
+  }
+  .outro .bar { width: 6cqw; height: .5cqw; background: var(--warn); }
+  .outro h2 { font-family: var(--display); font-size: 4.6cqw; margin: 0; line-height: 1.2; }
+  .outro p { margin: 0; font-size: 2cqw; color: var(--muted); line-height: 1.6; max-width: 52ch; font-weight: 300; }
+  .outro .url { font-size: 1.9cqw; color: var(--signal); word-break: break-all; margin-top: .6cqw; }
+
+  .rail { width: 100%; max-width: 980px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .rail i { display: block; height: 100%; width: 0; background: var(--signal); }
+  .meta {
+    width: 100%; max-width: 980px; display: flex; flex-wrap: wrap; gap: 10px 16px;
+    align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); line-height: 1.5;
+  }
+  button {
+    font: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 3px; padding: 7px 14px; cursor: pointer;
+  }
+  .controls { display: flex; gap: 8px; }
+  #play { background: var(--signal); color: #fff; border-color: var(--signal); font-weight: 500; }
+  #play.on { background: var(--surface); color: var(--ink); border-color: var(--line); font-weight: 400; }
+  audio { display: none; }
+  button:hover { border-color: var(--signal); }
+  button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scene, .shot img, .mark { transition: none; }
+    .scene.on .shot img { transform: scale(1.04); }
+  }
+  @media (max-width: 560px) {
+    .caption { padding: 4cqw; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <section class="scene">
+    <div class="shot"><img src="shots/01-overview.jpg" alt="대시보드 첫 화면. 분석한 문서 669건, 검출된 키워드 17개, 자료 기간과 정책 문서의 나라 수가 카드로 보인다."></div>
+    <div class="mark" style="left:2.5%;top:47%;width:95%;height:22%"></div>
+    <div class="caption">
+      <span class="step">01 · 한 화면</span>
+      <h2>뉴스와 정부 발표를 한곳에서 봅니다</h2>
+      <p>조회 기간 <b>51일</b> 동안 모은 <b>669건</b>을 읽고, 기술 용어 <b>17개</b>를 찾았습니다. 기간 단위와 자료 유형은 위쪽 버튼으로 바꿉니다.</p>
+    </div>
+  </section>
+
+  <section class="scene">
+    <div class="shot"><img src="shots/02-ranking.jpg" alt="많이 언급된 키워드 순위. 인공지능 188건, AI 에이전트 79건, 사이버보안 74건 순으로 막대가 그려져 있다."></div>
+    <div class="mark" style="left:2%;top:8%;width:55%;height:62%"></div>
+    <div class="caption">
+      <span class="step">02 · 순위</span>
+      <h2>무엇이 얼마나 언급됐나</h2>
+      <p><b>인공지능 188건(28.1%)</b>, AI 에이전트 79건, 사이버보안 74건. 같은 건수면 공동 순위로 묶고, 오른쪽에는 출처별로 몇 건을 모았는지 함께 보여 줍니다.</p>
+    </div>
+  </section>
+
+  <section class="scene">
+    <div class="shot"><img src="shots/03-evidence.jpg" alt="키워드를 누르면 열리는 근거 문서 목록. 제목과 날짜, 출처가 줄줄이 나오고 한 줄은 제목 비공개로 표시돼 있다."></div>
+    <div class="mark" style="left:3%;top:66%;width:54%;height:32%"></div>
+    <div class="caption">
+      <span class="step">03 · 근거</span>
+      <h2>숫자를 누르면 글이 나옵니다</h2>
+      <p>그 키워드가 어느 문서에서 나왔는지 날짜·출처와 함께 열립니다. 재배포가 제한된 출처는 <b>제목 비공개</b>로 두고 원문 주소만 답니다.</p>
+    </div>
+  </section>
+
+  <section class="scene">
+    <div class="shot"><img src="shots/04-compare.jpg" alt="뉴스와 정책 비교 화면. 왼쪽은 뉴스에서 더 많이 나온 키워드, 오른쪽은 정책에서 더 많이 나온 키워드가 마주 보는 막대로 그려져 있다."></div>
+    <div class="mark" style="left:2%;top:38%;width:96%;height:52%"></div>
+    <div class="caption">
+      <span class="step">04 · 비교</span>
+      <h2>뉴스와 정책은 다르게 말합니다</h2>
+      <p>AI 에이전트·생성형 AI는 <b>뉴스에만</b> 나오고, 양자기술·디지털 전환은 <b>정책에만</b> 나옵니다. 같은 기간을 두 유형으로 나눠 마주 보게 그립니다.</p>
+    </div>
+  </section>
+
+  <section class="scene">
+    <div class="shot"><img src="shots/05-country.jpg" alt="정책 국가별 키워드 화면. 한국 61건, 미국 52건, 중국 25건의 상위 키워드가 나라별로 나뉘어 있다."></div>
+    <div class="mark" style="left:2%;top:18%;width:96%;height:48%"></div>
+    <div class="caption">
+      <span class="step">05 · 나라별</span>
+      <h2>나라마다 앞세우는 기술이 다릅니다</h2>
+      <p>정책 문서를 발행 기관의 나라로 나눠 봅니다. 한국은 <b>디지털 전환</b>, 미국은 <b>양자기술</b>, 중국은 <b>반도체</b>가 인공지능 다음으로 많이 나왔습니다.</p>
+    </div>
+  </section>
+
+  <section class="scene">
+    <div class="outro">
+      <div class="bar"></div>
+      <h2>이 숫자는 언급량입니다</h2>
+      <p>그 기술이 더 중요하다거나 전망이 밝다는 뜻이 아닙니다. 출처를 고른 기준과 확인한 한계를 함께 공개합니다.</p>
+      <div class="url">hyeon0.github.io/policy-tech-trend-monitor</div>
+    </div>
+  </section>
+</div>
+
+<div class="rail"><i id="rail"></i></div>
+
+<div class="meta">
+  <span>52초 · 직접 녹음한 음성이 들어 있습니다. 재생 버튼을 누르면 화면과 함께 흐릅니다. 화면은 공개 데모 대시보드를 그대로 캡처한 것입니다(2026-10-22 기준). 샘플 데이터로 만든 데모라 기사·숫자는 실제 보도가 아닙니다.</span>
+  <span class="controls">
+    <button id="play" type="button">음성과 함께 재생</button>
+    <button id="replay" type="button">처음부터</button>
+  </span>
+  <audio id="voice" src="audio/narration.mp4" preload="auto"></audio>
+</div>
+
+<script>
+  const CUTS = [0, 7.5, 17.5, 27.5, 36.5, 44.5, 52];   // 장면 경계(초). 녹음에 맞춰 2~6번을 1.5초씩 당겼다
+  const TOTAL = 52;
+  const scenes = [...document.querySelectorAll(".scene")];
+  const rail = document.getElementById("rail");
+  let start = performance.now();
+
+  function frame(now) {
+    const v = document.getElementById("voice");
+    const t = (v && (!v.paused || v.currentTime > 0))
+      ? Math.min(v.currentTime, TOTAL)
+      : ((now - start) / 1000) % TOTAL;
+    let idx = 0;
+    for (let i = CUTS.length - 2; i >= 0; i--) { if (t >= CUTS[i]) { idx = i; break; } }
+    scenes.forEach((s, i) => s.classList.toggle("on", i === idx));
+    rail.style.width = (t / TOTAL * 100).toFixed(2) + "%";
+    requestAnimationFrame(frame);
+  }
+
+  const voice = document.getElementById("voice");
+  const playBtn = document.getElementById("play");
+
+  playBtn.addEventListener("click", () => {
+    if (voice.paused) {
+      voice.play().then(() => {
+        playBtn.textContent = "일시정지";
+        playBtn.classList.add("on");
+      }).catch(() => {
+        playBtn.textContent = "음성을 재생할 수 없습니다";
+      });
+    } else {
+      voice.pause();
+      playBtn.textContent = "이어서 재생";
+      playBtn.classList.remove("on");
+    }
+  });
+
+  voice.addEventListener("ended", () => {
+    playBtn.textContent = "음성과 함께 재생";
+    playBtn.classList.remove("on");
+    start = performance.now();
+  });
+
+  document.getElementById("replay").addEventListener("click", () => {
+    start = performance.now();
+    if (!voice.paused) { voice.currentTime = 0; } else { voice.currentTime = 0; }
+  });
+
+  requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
