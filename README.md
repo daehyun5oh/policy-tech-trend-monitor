@@ -2,9 +2,28 @@
 
 > **배포 주소(GitHub Pages, 합성 샘플 데모)**
 > - 소유자(hyeon0): https://hyeon0.github.io/policy-tech-trend-monitor/
-> - 팀원(daehyun5oh, fork 배포): *(fork에서 Pages를 켠 뒤 주소를 여기에 적는다)*
+> - 팀원(daehyun5oh, fork 배포): https://daehyun5oh.github.io/policy-tech-trend-monitor/
 >
 > **수업일(2026-10-17) 마지막 병합 이후 바뀐 것**: [비교 링크](https://github.com/hyeon0/policy-tech-trend-monitor/compare/3965f54059d32a17cbb2d843dc188f0063b8e86f...main)
+
+## 소개 영상 (52초)
+
+이 도구가 무엇을 보여 주는지 52초로 설명합니다. 대시보드 실제 화면과 직접 녹음한 설명이 들어 있습니다.
+
+[![소개 영상 — 대시보드 첫 화면](promo/shots/01-overview.jpg)](https://daehyun5oh.github.io/policy-tech-trend-monitor/promo/)
+
+**[▶ 영상 보기](https://daehyun5oh.github.io/policy-tech-trend-monitor/promo/)** — 페이지가 열리면 「음성과 함께 재생」을 누릅니다. 소리 없이 자동 반복으로도 돌아갑니다.
+
+| 시각 | 보여 주는 것 |
+|---|---|
+| 0초 | 51일 동안 669건을 읽고 기술 용어 17개를 찾았다 |
+| 7.5초 | 인공지능 188건으로 1위, AI 에이전트·사이버보안이 뒤를 잇는다 |
+| 17.5초 | 키워드를 누르면 어느 글에서 나왔는지 날짜·출처까지 열린다 |
+| 27.5초 | 생성형 AI는 뉴스에만, 양자기술은 정책에만 나왔다 |
+| 36.5초 | 한국은 디지털 전환, 미국은 양자기술, 중국은 반도체 |
+| 44.5초 | 이 숫자는 언급량일 뿐 중요도가 아니다 |
+
+화면의 숫자는 모두 위 데모 대시보드에 실제로 보이는 값입니다. 만든 방법과 다시 만드는 법은 [`promo/README.md`](promo/README.md)에 있습니다.
 
 
 뉴스와 정부 발표를 모아, **어떤 기술 용어가 몇 건의 글에서 언급됐는지** 기간별로 세어 줍니다.
