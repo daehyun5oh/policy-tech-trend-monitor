@@ -3,17 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>기술키워드 모니터 2분</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  :root { color-scheme: light; }
-  body { margin: 0; font: 14px system-ui, sans-serif; }
-  img { max-width: 100%; }
-  [hidden] { display: none !important; }
-</style>
-<title>기술키워드 모니터 30초</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">
-<style>
-  /* 레이아웃: 16:9 무대에 대시보드 실제 화면 4장을 차례로 띄우고, 설명 카드를 아래에 겹친다 */
+  /* 16:9 무대에 장면 9개를 차례로 띄운다. 대시보드 캡처 5장 + 실행 화면 1장 + 설명 카드 3장 */
   :root {
     --ink: #10151c;
     --paper: #eceef2;
@@ -21,24 +14,26 @@
     --line: #c9cfd8;
     --muted: #5b6676;
     --signal: #1f6f7a;
-    --signal-soft: #d6e8ea;
     --warn: #a2462f;
     --veil: rgba(10, 16, 22, .82);
+    --term-bg: #0d1419;
+    --term-ink: #cfe3e6;
     --display: "Gowun Batang", "Nanum Myeongjo", serif;
     --body: "IBM Plex Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "D2Coding", "Consolas", monospace;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --ink: #e8ecf2; --paper: #0e1319; --surface: #161d26; --line: #2b3542;
-      --muted: #9aa7b6; --signal: #67c3cf; --signal-soft: #17323a; --warn: #e0876b;
+      --muted: #9aa7b6; --signal: #67c3cf; --warn: #e0876b;
       --veil: rgba(6, 10, 14, .86);
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --ink: #e8ecf2; --paper: #0e1319; --surface: #161d26; --line: #2b3542;
-    --muted: #9aa7b6; --signal: #67c3cf; --signal-soft: #17323a; --warn: #e0876b;
+    --muted: #9aa7b6; --signal: #67c3cf; --warn: #e0876b;
     --veil: rgba(6, 10, 14, .86);
     color-scheme: dark;
   }
@@ -67,11 +62,11 @@
   .shot img {
     position: absolute; inset: 0; width: 100%; height: 100%;
     object-fit: cover; object-position: top center;
-    transform: scale(1.03); transition: transform 10s linear;
+    transform: scale(1.03); transition: transform 16s linear;
   }
-  .scene.on .shot img { transform: scale(1.12) translateY(-2%); }
+  .scene.on .shot img { transform: scale(1.11) translateY(-2%); }
 
-  /* 화면 위에서 설명할 부분을 네모로 짚어 준다 */
+  /* 화면에서 설명하는 부분을 네모로 짚어 준다 */
   .mark {
     position: absolute; border: .28cqw solid var(--signal);
     border-radius: 3px; box-shadow: 0 0 0 100vmax rgba(8, 12, 18, .28);
@@ -89,37 +84,69 @@
   .step { font-size: 1.5cqw; letter-spacing: .16em; color: #9fc6cc; font-weight: 500; }
   .caption h2 {
     font-family: var(--display); font-weight: 700; margin: 0;
-    font-size: 3.6cqw; line-height: 1.25; text-wrap: balance;
+    font-size: 3.4cqw; line-height: 1.25; text-wrap: balance;
   }
-  .caption p { margin: 0; font-size: 1.85cqw; line-height: 1.55; color: #cfd8e0; font-weight: 300; max-width: 60ch; }
+  .caption p { margin: 0; font-size: 1.8cqw; line-height: 1.55; color: #cfd8e0; font-weight: 300; max-width: 62ch; }
   .caption b { color: #fff; font-weight: 600; }
 
-  /* 마지막 장면 */
-  .outro {
+  /* 캡처가 없는 장면: 설명 카드 */
+  .card {
     position: absolute; inset: 0; background: var(--surface);
-    padding: 6cqw 7cqw; display: flex; flex-direction: column; justify-content: center; gap: 1.6cqw;
+    padding: 5cqw 6cqw; display: flex; flex-direction: column; justify-content: center; gap: 1.4cqw;
   }
-  .outro .bar { width: 6cqw; height: .5cqw; background: var(--warn); }
-  .outro h2 { font-family: var(--display); font-size: 4.6cqw; margin: 0; line-height: 1.2; }
-  .outro p { margin: 0; font-size: 2cqw; color: var(--muted); line-height: 1.6; max-width: 52ch; font-weight: 300; }
-  .outro .url { font-size: 1.9cqw; color: var(--signal); word-break: break-all; margin-top: .6cqw; }
+  .card .bar { width: 6cqw; height: .5cqw; background: var(--warn); }
+  .card .step { color: var(--muted); }
+  .card h2 { font-family: var(--display); font-size: 4.2cqw; margin: 0; line-height: 1.2; text-wrap: balance; }
+  .card p { margin: 0; font-size: 1.95cqw; color: var(--muted); line-height: 1.6; max-width: 58ch; font-weight: 300; }
+  .card b { color: var(--ink); font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9cqw 1.6cqw; margin-top: .6cqw; }
+  .grid div {
+    font-size: 1.7cqw; line-height: 1.45; color: var(--ink);
+    border-left: .3cqw solid var(--signal); padding-left: 1cqw; min-width: 0;
+  }
+  .grid span { display: block; color: var(--muted); font-size: 1.45cqw; font-weight: 300; }
+
+  .figs { display: flex; gap: 3.5cqw; margin-top: .4cqw; flex-wrap: wrap; }
+  .figs div { min-width: 0; }
+  .figs strong {
+    display: block; font-family: var(--display); font-size: 4.4cqw; line-height: 1.1;
+    color: var(--warn); font-variant-numeric: tabular-nums;
+  }
+  .figs span { font-size: 1.6cqw; color: var(--muted); font-weight: 300; }
+
+  /* 실행 화면 */
+  .term {
+    position: absolute; inset: 0; background: var(--term-bg);
+    padding: 3.4cqw 4cqw; display: flex; flex-direction: column; gap: 1.2cqw;
+  }
+  .term pre {
+    margin: 0; font-family: var(--mono); font-size: 1.52cqw; line-height: 1.6;
+    color: var(--term-ink); white-space: pre; overflow: hidden; min-width: 0;
+  }
+  .term .cmd { color: #8fd7c8; }
+  .term .ok { color: #7fb1bb; }
+  .term .hit { color: #f0b67f; font-weight: 500; }
+  .term .note { font-size: 1.7cqw; color: #93a7b2; font-weight: 300; margin: 0; }
 
   .rail { width: 100%; max-width: 980px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
   .rail i { display: block; height: 100%; width: 0; background: var(--signal); }
   .meta {
     width: 100%; max-width: 980px; display: flex; flex-wrap: wrap; gap: 10px 16px;
-    align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); line-height: 1.5;
+    align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); line-height: 1.55;
   }
-  button {
+  .meta > span:first-child { flex: 1 1 320px; min-width: 0; }
+  button, label.file {
     font: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
     border: 1px solid var(--line); border-radius: 3px; padding: 7px 14px; cursor: pointer;
   }
-  .controls { display: flex; gap: 8px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
   #play { background: var(--signal); color: #fff; border-color: var(--signal); font-weight: 500; }
   #play.on { background: var(--surface); color: var(--ink); border-color: var(--line); font-weight: 400; }
+  #pick { position: absolute; width: 1px; height: 1px; opacity: 0; }
   audio { display: none; }
-  button:hover { border-color: var(--signal); }
-  button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  button:hover, label.file:hover { border-color: var(--signal); }
+  button:focus-visible, #pick:focus-visible + span { outline: 2px solid var(--signal); outline-offset: 2px; }
 
   @media (prefers-reduced-motion: reduce) {
     .scene, .shot img, .mark { transition: none; }
@@ -127,77 +154,148 @@
   }
   @media (max-width: 560px) {
     .caption { padding: 4cqw; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 </head>
 <body>
 
 <div class="stage" id="stage">
+
+  <!-- 1. 왜 만들었나 -->
+  <section class="scene">
+    <div class="card">
+      <div class="bar"></div>
+      <span class="step">왜 만들었나</span>
+      <h2>주요국이 어떤 기술에 정책을 걸고 있나</h2>
+      <p>업무에서 자주 확인해야 했습니다. 그런데 기관마다 발표처가 따로 있고 매번 눈으로 읽다 보니, 무엇이 얼마나 나왔는지 <b>같은 기준으로 말하기</b>가 어려웠습니다.</p>
+      <div class="grid">
+        <div>발표처가 흩어져 있다<span>한국·미국·중국 기관을 따로 연다</span></div>
+        <div>읽는 사람마다 다르다<span>무엇을 셀지 기준이 그때그때</span></div>
+        <div>뉴스와 정책이 섞인다<span>둘을 갈라 보기 어렵다</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 어떻게 쓰나 — 넣기 -->
+  <section class="scene">
+    <div class="term">
+      <span class="step" style="color:#7fb1bb">어떻게 쓰나 · 기간을 넣는다</span>
+<pre><span class="cmd">&gt; python monitor.py --from 2026-10-01 --to 2026-10-24</span>
+
+조회 기간: 2026-10-01 ~ 2026-10-24 (24일)
+
+  [수집 1/4] collect ... <span class="ok">ok</span> (8초)
+  [수집 2/4] collect_policy ... <span class="ok">ok</span> (10초)
+  [수집 3/4] collect_html ... <span class="ok">ok</span> (56초)
+  [수집 4/4] extract ... <span class="ok">ok</span> (3초)
+  [분석 1/3] aggregate ... <span class="ok">ok</span> (0초)
+  [분석 2/3] validate ... <span class="ok">ok</span> (0초)
+  [분석 3/3] dashboard ... <span class="ok">ok</span> (0초)
+
+확보한 자료
+  뉴스: <span class="hit">141건</span>, 실제 2026-10-01 ~ 2026-10-24
+  정책: <span class="hit">67건</span>, 실제 2026-10-01 ~ 2026-10-23</pre>
+      <p class="note">기간만 넣으면 모으고, 정리하고, 세는 일까지 한 번에 돌아갑니다.</p>
+    </div>
+  </section>
+
+  <!-- 3. 결과 화면 -->
   <section class="scene">
     <div class="shot"><img src="shots/01-overview.jpg" alt="대시보드 첫 화면. 분석한 문서 669건, 검출된 키워드 17개, 자료 기간과 정책 문서의 나라 수가 카드로 보인다."></div>
     <div class="mark" style="left:2.5%;top:47%;width:95%;height:22%"></div>
     <div class="caption">
-      <span class="step">01 · 한 화면</span>
-      <h2>뉴스와 정부 발표를 한곳에서 봅니다</h2>
-      <p>조회 기간 <b>51일</b> 동안 모은 <b>669건</b>을 읽고, 기술 용어 <b>17개</b>를 찾았습니다. 기간 단위와 자료 유형은 위쪽 버튼으로 바꿉니다.</p>
+      <span class="step">어떻게 쓰나 · 결과를 본다</span>
+      <h2>끝나면 이 화면이 열립니다</h2>
+      <p>아래 화면은 공개 데모입니다. <b>51일</b> 동안 모은 <b>669건</b>에서 기술 용어 <b>17개</b>를 찾았습니다.</p>
     </div>
   </section>
 
+  <!-- 4. 순위 -->
   <section class="scene">
     <div class="shot"><img src="shots/02-ranking.jpg" alt="많이 언급된 키워드 순위. 인공지능 188건, AI 에이전트 79건, 사이버보안 74건 순으로 막대가 그려져 있다."></div>
     <div class="mark" style="left:2%;top:8%;width:55%;height:62%"></div>
     <div class="caption">
-      <span class="step">02 · 순위</span>
+      <span class="step">어떻게 쓰나 · 결과를 본다</span>
       <h2>무엇이 얼마나 언급됐나</h2>
-      <p><b>인공지능 188건(28.1%)</b>, AI 에이전트 79건, 사이버보안 74건. 같은 건수면 공동 순위로 묶고, 오른쪽에는 출처별로 몇 건을 모았는지 함께 보여 줍니다.</p>
+      <p>많이 언급된 순서로 <b>인공지능 188건</b>, AI 에이전트 79건, 사이버보안 74건입니다.</p>
     </div>
   </section>
 
+  <!-- 5. 근거 문서 -->
   <section class="scene">
     <div class="shot"><img src="shots/03-evidence.jpg" alt="키워드를 누르면 열리는 근거 문서 목록. 제목과 날짜, 출처가 줄줄이 나오고 한 줄은 제목 비공개로 표시돼 있다."></div>
     <div class="mark" style="left:3%;top:66%;width:54%;height:32%"></div>
     <div class="caption">
-      <span class="step">03 · 근거</span>
+      <span class="step">어떻게 쓰나 · 근거를 확인한다</span>
       <h2>숫자를 누르면 글이 나옵니다</h2>
-      <p>그 키워드가 어느 문서에서 나왔는지 날짜·출처와 함께 열립니다. 재배포가 제한된 출처는 <b>제목 비공개</b>로 두고 원문 주소만 답니다.</p>
+      <p>어느 글에서 나왔는지 날짜와 출처까지 열립니다. 재배포가 막힌 출처는 <b>제목 없이</b> 원문 주소만 답니다.</p>
     </div>
   </section>
 
-  <section class="scene">
-    <div class="shot"><img src="shots/04-compare.jpg" alt="뉴스와 정책 비교 화면. 왼쪽은 뉴스에서 더 많이 나온 키워드, 오른쪽은 정책에서 더 많이 나온 키워드가 마주 보는 막대로 그려져 있다."></div>
-    <div class="mark" style="left:2%;top:38%;width:96%;height:52%"></div>
-    <div class="caption">
-      <span class="step">04 · 비교</span>
-      <h2>뉴스와 정책은 다르게 말합니다</h2>
-      <p>AI 에이전트·생성형 AI는 <b>뉴스에만</b> 나오고, 양자기술·디지털 전환은 <b>정책에만</b> 나옵니다. 같은 기간을 두 유형으로 나눠 마주 보게 그립니다.</p>
-    </div>
-  </section>
-
+  <!-- 6. 내 주제 — 나라별 -->
   <section class="scene">
     <div class="shot"><img src="shots/05-country.jpg" alt="정책 국가별 키워드 화면. 한국 61건, 미국 52건, 중국 25건의 상위 키워드가 나라별로 나뉘어 있다."></div>
     <div class="mark" style="left:2%;top:18%;width:96%;height:48%"></div>
     <div class="caption">
-      <span class="step">05 · 나라별</span>
-      <h2>나라마다 앞세우는 기술이 다릅니다</h2>
-      <p>정책 문서를 발행 기관의 나라로 나눠 봅니다. 한국은 <b>디지털 전환</b>, 미국은 <b>양자기술</b>, 중국은 <b>반도체</b>가 인공지능 다음으로 많이 나왔습니다.</p>
+      <span class="step">내 주제에 쓴다면</span>
+      <h2>주요국의 신흥 기술 정책 동향</h2>
+      <p>정책 문서를 발행 기관의 나라로 나눠 보면, 한국은 <b>디지털 전환</b>, 미국은 <b>양자기술</b>, 중국은 <b>반도체</b>가 인공지능 다음이었습니다.</p>
     </div>
   </section>
 
+  <!-- 7. 내 주제 — 뉴스와 정책 -->
   <section class="scene">
-    <div class="outro">
-      <div class="bar"></div>
-      <h2>이 숫자는 언급량입니다</h2>
-      <p>그 기술이 더 중요하다거나 전망이 밝다는 뜻이 아닙니다. 출처를 고른 기준과 확인한 한계를 함께 공개합니다.</p>
-      <div class="url">hyeon0.github.io/policy-tech-trend-monitor</div>
+    <div class="shot"><img src="shots/04-compare.jpg" alt="뉴스와 정책 비교 화면. 왼쪽은 뉴스에서 더 많이 나온 키워드, 오른쪽은 정책에서 더 많이 나온 키워드가 마주 보는 막대로 그려져 있다."></div>
+    <div class="mark" style="left:2%;top:38%;width:96%;height:52%"></div>
+    <div class="caption">
+      <span class="step">내 주제에 쓴다면</span>
+      <h2>보도와 발표를 갈라 놓습니다</h2>
+      <p>양자기술은 <b>정책에만</b>, AI 에이전트는 <b>뉴스에만</b> 나왔습니다. 같은 기간을 두 유형으로 나눠 마주 보게 그립니다.</p>
     </div>
   </section>
+
+  <!-- 8. 내가 고친 부분 -->
+  <section class="scene">
+    <div class="card">
+      <div class="bar"></div>
+      <span class="step">내가 맡은 부분</span>
+      <h2>자료를 모아 정리하는 쪽</h2>
+      <p>화면은 같이 쓰는 대시보드이고, 그 화면에 올라가는 자료를 만드는 쪽을 제가 맡았습니다.</p>
+      <div class="grid">
+        <div>정책 수집기<span>공개 RSS에서 가져오기</span></div>
+        <div>미국·중국 목록 수집기<span>사이트 5곳, 구조가 제각각</span></div>
+        <div>정제·중복 제거<span>같은 글을 한 건으로</span></div>
+        <div>기간별 집계<span>일·주·월로 세기</span></div>
+        <div>보고서 생성<span>주간·월간 문서</span></div>
+        <div>공개 전 점검<span>재배포 제한 지키기</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. 아쉬운 점 -->
+  <section class="scene">
+    <div class="card">
+      <div class="bar"></div>
+      <span class="step">써 보니 아쉬운 점</span>
+      <h2>언급과 주제를 가리지 못합니다</h2>
+      <p>스치듯 한 번 적힌 글도 그 기술을 다룬 글과 똑같이 <b>한 건</b>으로 셉니다. 오늘 모은 자료로 세어 보면 이렇습니다.</p>
+      <div class="figs">
+        <div><strong>86 / 235</strong><span>글과 용어를 짝지은 235건 중<br>딱 한 번 언급이 86건</span></div>
+        <div><strong>15 / 23</strong><span>사이버보안이 나온 23건 중<br>한 번만 나온 글이 15건</span></div>
+      </div>
+      <p style="margin-top:.8cqw">그래서 이 숫자는 <b>언급량</b>입니다. 중요도나 전망이 아닙니다.</p>
+    </div>
+  </section>
+
 </div>
 
 <div class="rail"><i id="rail"></i></div>
 
 <div class="meta">
-  <span>52초 · 직접 녹음한 음성이 들어 있습니다. 재생 버튼을 누르면 화면과 함께 흐릅니다. 화면은 공개 데모 대시보드를 그대로 캡처한 것입니다(2026-10-22 기준). 샘플 데이터로 만든 데모라 기사·숫자는 실제 보도가 아닙니다.</span>
+  <span>2분 7초 · 「음성과 함께 재생」을 누르면 직접 녹음한 음성에 맞춰 화면이 넘어갑니다. 버튼을 누르지 않으면 소리 없이 자동으로 반복합니다. 대시보드 화면은 공개 데모를 캡처한 것이라 제목·숫자가 합성 자료입니다. 실행 화면과 아쉬운 점의 숫자는 2026-10-24에 실제로 돌린 결과입니다.</span>
   <span class="controls">
+    <label class="file" for="pick"><input type="file" id="pick" accept="audio/*"><span>다시 녹음한 파일로 바꾸기</span></label>
     <button id="play" type="button">음성과 함께 재생</button>
     <button id="replay" type="button">처음부터</button>
   </span>
@@ -205,16 +303,22 @@
 </div>
 
 <script>
-  const CUTS = [0, 7.5, 17.5, 27.5, 36.5, 44.5, 52];   // 장면 경계(초). 녹음에 맞춰 2~6번을 1.5초씩 당겼다
-  const TOTAL = 52;
+  // 장면 경계(초). 2026-10-24 녹음(127.3초)의 문단 경계에 맞춘 값이다
+  const CUTS = [0, 18.2, 34.5, 45.0, 53.8, 65.4, 80.1, 90.8, 105.7, 127.3];
+  const TOTAL = 127.3;
+  const OFFSET = 0;   // 녹음이 화면보다 빠르면 양수로 올린다(초)
+
   const scenes = [...document.querySelectorAll(".scene")];
   const rail = document.getElementById("rail");
+  const voice = document.getElementById("voice");
+  const playBtn = document.getElementById("play");
+  const pick = document.getElementById("pick");
   let start = performance.now();
 
   function frame(now) {
-    const v = document.getElementById("voice");
-    const t = (v && (!v.paused || v.currentTime > 0))
-      ? Math.min(v.currentTime, TOTAL)
+    const live = voice.src && (!voice.paused || voice.currentTime > 0);
+    const t = live
+      ? Math.min(Math.max(voice.currentTime - OFFSET, 0), TOTAL)
       : ((now - start) / 1000) % TOTAL;
     let idx = 0;
     for (let i = CUTS.length - 2; i >= 0; i--) { if (t >= CUTS[i]) { idx = i; break; } }
@@ -223,8 +327,12 @@
     requestAnimationFrame(frame);
   }
 
-  const voice = document.getElementById("voice");
-  const playBtn = document.getElementById("play");
+  pick.addEventListener("change", () => {
+    const f = pick.files && pick.files[0];
+    if (!f) return;
+    voice.src = URL.createObjectURL(f);
+    playBtn.textContent = "음성과 함께 재생";
+  });
 
   playBtn.addEventListener("click", () => {
     if (voice.paused) {
@@ -249,7 +357,7 @@
 
   document.getElementById("replay").addEventListener("click", () => {
     start = performance.now();
-    if (!voice.paused) { voice.currentTime = 0; } else { voice.currentTime = 0; }
+    voice.currentTime = 0;
   });
 
   requestAnimationFrame(frame);
